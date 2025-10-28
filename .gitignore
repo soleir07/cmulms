@@ -7,3 +7,4 @@ cmu_lms/.env
 *.json
 *.envcredentials.json
 token.pickle
+.env
