@@ -31,7 +31,7 @@ SECRET_KEY = 'django-insecure-hpfv+)po@r+trsf@*r)%m2m%o6urk5dvd6i@7oa#c5v^*ede4i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['cmu-lms.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['cmu-lms.onrender.com', 'localhost', '127.0.0.1','cmulms-1.onrender.com']
 
 
 
