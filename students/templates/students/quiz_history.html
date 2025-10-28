@@ -1,0 +1,51 @@
+{% load static %}
+{% load quiz_extras %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+   <title>CMU-LMS-STUDENT</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'images/cmu.jpg' %}">
+  <style>
+    body { background: #f8f9fc; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
+    .container { max-width: 800px; margin: 2rem auto; padding: 2rem; background: #fff; border-radius: 14px; box-shadow: 0 5px 20px rgba(0,0,0,0.06); }
+    h2 { text-align: center; font-size: 1.9rem; color: #2c3e50; margin-bottom: .3em; }
+    .subtitle { text-align: center; font-size: 1rem; color: #7f8c8d; margin-bottom: 2rem; }
+    .quiz-question-card { border: 1.5px solid #e0e6f1; border-radius: 10px; padding: 1.3rem; margin-bottom: 1.3rem; background: #fdfefe; }
+    .quiz-question-number { font-weight: 600; color: #3949ab; margin-bottom: .4rem; }
+    .quiz-question-text { font-size: 1.1rem; color: #2c3e50; margin-bottom: .8rem; }
+    .answer { font-size: 1rem; color: #34495e; background: #f3f6ff; border-radius: 8px; padding: .6rem .9rem; }
+    .no-answer { font-style: italic; color: #999; }
+    .back-btn { display: inline-block; margin-top: 2rem; background: #3949ab; color: #fff; border-radius: 8px; padding: .6em 1.4em; font-size: 1rem; text-decoration: none; transition: background .2s; }
+    .back-btn:hover { background: #1e88e5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>{{ quiz.title }}</h2>
+    <div class="subtitle">{{ quiz.get_quiz_type_display }}</div>
+    <p style="text-align:center; margin-bottom: 2rem; color:#555;">{{ quiz.description|default:"No description available" }}</p>
+
+    {% for question in quiz.questions.all %}
+      <div class="quiz-question-card">
+        <div class="quiz-question-number">Q{{ forloop.counter }}</div>
+        <div class="quiz-question-text">{{ question.text }}</div>
+
+        {% with prev_answer=question|get_answer:request.user %}
+          <div class="answer">
+            <strong>Your Answer:</strong>
+            {% if prev_answer %}
+              {{ prev_answer }}
+            {% else %}
+              <span class="no-answer">No answer</span>
+            {% endif %}
+          </div>
+        {% endwith %}
+      </div>
+    {% endfor %}
+
+    <a href="{% url 'students:class_detail' id=quiz.class_obj.id %}" class="back-btn">← Back to Classwork</a>
+  </div>
+</body>
+</html>

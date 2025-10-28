@@ -1,0 +1,745 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMU-LMS-STUDENT</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'images/cmu.jpg' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+/* --- SIDEBAR --- */
+.sidebar {
+    width: 270px;
+    background: linear-gradient(135deg, #1e40af 70%, #3b82f6 100%);
+    color: #fff;
+    height: 100vh;
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.28s cubic-bezier(.4,2,.7,.9), transform 0.28s ease;
+    overflow: hidden;
+    box-shadow: 2px 0 18px 0 rgba(30,64,175,0.07);
+}
+.sidebar.closed {
+    width: 65px;
+}
+.sidebar .logo {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.09);
+    background: rgba(255,255,255,0.06);
+    transition: padding .3s;
+}
+.sidebar.closed .logo { padding: 20px 12px; }
+.logo img {
+    width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; transition: margin 0.3s;
+}
+.sidebar.closed .logo img { margin-right: 0; }
+.cmu-logo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    transition: opacity 0.18s, width 0.18s;
+}
+.sidebar.closed .cmu-logo {
+    opacity: 0; width: 0; overflow: hidden;
+}
+.nav-menu { flex: 1; padding: 12px 0;}
+.nav-item {
+    display: flex; align-items: center; padding: 14px 28px 14px 22px;
+    color: white; text-decoration: none;
+    transition: all 0.22s;
+    font-size: 1rem; font-weight: 500;
+    letter-spacing: 0.02em;
+}
+.nav-item:hover, .nav-item.active {
+    background: rgba(255,255,255,0.15);
+    color: #fff; 
+    transform: translateX(5px);
+}
+.nav-item i { margin-right: 15px; min-width: 21px;}
+.sidebar.closed .nav-item { justify-content: center; padding: 14px 0; }
+.sidebar.closed .nav-item i { margin-right: 0;}
+.sidebar.closed .nav-item .nav-label { display: none; }
+.nav-item .nav-label { display: inline; transition: opacity 0.2s;}
+.sidebar.closed .nav-item .nav-label { display: none; }
+.dropdown-container { position: relative; }
+.sidebar.closed .dropdown-container .teaching-header { justify-content: center; }
+.sidebar.closed .dropdown-arrow,
+.sidebar.closed .class-count,
+.sidebar.closed .teaching-content span,
+.sidebar.closed .teaching-content .nav-label { display: none !important; }
+.sidebar.closed .subjects-container { display: none !important; }
+.teaching-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.teaching-header:hover { transform: translateY(-1px); }
+.teaching-header.active { background: rgba(255,255,255,0.12); border-radius: 8px; }
+.teaching-content { display: flex; align-items: center; color: white; }
+.teaching-content i {
+    width: 29px; height: 29px; border-radius: 50%; margin-right: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;
+}
+.dropdown-arrow { color: white; font-size: 14px; transition: transform 0.3s ease; }
+.dropdown-arrow.rotated { transform: rotate(180deg); }
+.subjects-container {
+    overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 0; opacity: 0; margin-top: 0;
+}
+.subjects-container.expanded { max-height: 500px; opacity: 1; margin-top: 10px; }
+.subject-item {
+    display: flex; align-items: center; background: transparent; margin-bottom: 8px; padding: 12px 10px 12px 20px;
+    border-radius: 50px; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.25);
+}
+.subject-item:last-child { margin-bottom: 0; }
+.subject-item:hover { background: rgba(255,255,255,0.13); transform: translateX(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.09);}
+.subject-avatar { width: 24px; height: 24px; border-radius: 50%; background: #2563eb; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: 600; font-size: 12px; color: white;}
+.subject-content { flex: 1;}
+.subject-name { color: white; font-weight: 600; font-size: 15px; margin: 0;}
+.subject-details { color: rgba(255,255,255,0.8); font-size: 12px; margin: 2px 0 0 0;}
+.class-count { background: rgba(255,255,255,0.22); color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+.delete-subject-btn { background: rgba(220,38,38,0.8); color: white; border: none; width: 20px; height: 20px; border-radius: 50%; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; margin-left: 8px;}
+.delete-subject-btn:hover { background: rgba(220,38,38,1); transform: scale(1.1); }
+.sidebar-hover-area {
+    position: fixed;
+    left: 0; top: 0;
+    width: 22px; height: 100vh;
+    z-index: 1050;
+    background: transparent;
+}
+
+/* --- MAIN LAYOUT --- */
+body {
+    background: #f3f6fa;
+}
+.main-content {
+    margin-left: 270px;
+    transition: margin-left 0.28s cubic-bezier(.4,2,.7,.9);
+    min-height: 100vh;
+    display: flex;
+    background-color: #f7fafd;
+    overflow: hidden;
+}
+.sidebar.closed  ~ .main-content {
+    margin-left: 65px;
+}
+@media (max-width: 900px) {
+    .main-content { margin-left: 65px !important; }
+    .sidebar { width: 65px !important; }
+}
+
+@media (max-width: 600px) {
+    .sidebar, .main-content { margin-left: 0 !important; width: 100vw !important; }
+    .sidebar { position: fixed; top: 0; left: 0; width: 100vw !important; height: 60px !important; flex-direction: row; z-index: 2000; }
+    .sidebar .logo, .sidebar .nav-menu, .sidebar .dropdown-container { padding: 0 !important; }
+    .sidebar.closed { width: 100vw !important; }
+    .main-content { margin-top: 62px !important; }
+}
+
+/* --- CHAT SIDEBAR --- */
+.chat-sidebar {
+    width: 300px;
+    min-width: 240px;
+    background: #fff;
+    border-right: 1px solid #e5e7eb;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 8px 0 rgba(30,64,175,0.03);
+}
+@media (max-width: 900px) {
+    .chat-sidebar { width: 100px; min-width: 70px; }
+}
+@media (max-width: 600px) {
+    .chat-sidebar { display: none !important; }
+}
+
+/* --- CHAT MAIN --- */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+    position: relative;
+    border-radius: 0 12px 12px 0;
+    min-width: 0;
+    min-height: 100vh;
+}
+@media (max-width: 900px) {
+    .chat-main { border-radius: 0; }
+}
+@media (max-width: 600px) {
+    .chat-main { border-radius: 0; min-height: 100vw; }
+}
+
+/* --- CHAT HEADER --- */
+.chat-header {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.chat-header .fw-semibold {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+.chat-header-avatar img,
+.chat-contact-avatar img {
+    border: 2px solid #e5e7eb;
+    object-fit: cover;
+    width: 45px; height: 45px;
+}
+.chat-header-avatar .rounded-circle,
+.chat-contact-avatar .rounded-circle {
+    width: 45px; height: 45px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+@media (max-width: 900px) {
+    .chat-header-avatar img,
+    .chat-contact-avatar img,
+    .chat-header-avatar .rounded-circle,
+    .chat-contact-avatar .rounded-circle { width: 32px; height: 32px; font-size: 15px;}
+}
+
+/* --- CHAT CONTACTS --- */
+.chat-contacts {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0 18px 0;
+}
+.chat-contact {
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    text-decoration: none;
+    color: #212529;
+    transition: background 0.18s;
+    border-radius: 8px;
+    margin: 0 8px 8px 8px;
+}
+.chat-contact:hover {
+    background-color: #e0e7ff;
+}
+.chat-contact.active {
+    background-color: #2563eb;
+    color: #fff;
+}
+.chat-contact-name {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-left: 8px;
+}
+@media (max-width: 900px) {
+    .chat-contact-name { display: none; }
+}
+
+/* --- CHAT MESSAGES --- */
+.chat-messages {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    background-color: #f5f7fb;
+}
+
+/* Message bubble */
+.chat-message {
+    max-width: 100%;
+}
+.message-bubble {
+    padding: 0.5rem 1rem;
+    border-radius: 18px;
+    font-size: 1.02rem;
+    transition: background 0.2s;
+    max-width: 340px;
+    word-break: break-word;
+    box-shadow: 0 1px 8px rgba(30, 64, 175, 0.05);
+}
+@media (max-width: 600px) {
+    .message-bubble { font-size: 0.98rem; padding: 0.45rem 0.8rem; max-width: 96vw;}
+}
+.message-bubble.bg-primary {
+    background-color: #2563eb !important;
+}
+.message-bubble.bg-light {
+    background-color: #e9ecef !important;
+    color: #212529;
+}
+.message-time {
+    font-size: 0.82rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+/* --- CHAT INPUT --- */
+.chat-input {
+    display: flex;
+    border-top: 1px solid #e5e7eb;
+    background-color: #fff;
+    padding: 0.75rem;
+    align-items: center;
+    gap: 0.7rem;
+}
+.chat-input input {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 20px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    outline: none;
+    background: #f8fafc;
+}
+.chat-input input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 0.08rem rgba(37,99,235,0.18);
+}
+.chat-input button {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+    font-size: 1.1rem;
+}
+.chat-input button:hover {
+    background-color: #1e40af;
+}
+
+/* --- SCROLLBAR STYLING --- */
+.chat-contacts::-webkit-scrollbar,
+.chat-messages::-webkit-scrollbar {
+    width: 7px;
+}
+.chat-contacts::-webkit-scrollbar-thumb,
+.chat-messages::-webkit-scrollbar-thumb {
+    background-color: #dbeafe;
+    border-radius: 10px;
+}
+
+/* --- MODAL --- */
+.modal-content {
+    border-radius: 12px;
+}
+.modal-header { border-bottom: 1px solid #e5e7eb; }
+.modal-footer { border-top: 1px solid #e5e7eb; }
+
+/* --- RESPONSIVE LAYOUT --- */
+@media (max-width: 900px) {
+    .sidebar { width: 65px !important; }
+    .main-content { margin-left: 65px !important; }
+}
+@media (max-width: 600px) {
+    .sidebar { width: 100vw !important; min-width: 0; height: 60px !important; flex-direction: row; }
+    .sidebar .logo, .sidebar .nav-menu { display: none; }
+    .main-content { margin-left: 0 !important; width: 100vw !important; min-width: 0;}
+    .chat-sidebar { display: none; }
+    .chat-main { border-radius: 0; min-height: 100vw; }
+}
+
+/* General improvements */
+body, input, button {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+button {
+    padding: 0.6em 1.2em;
+    border-radius: 6px;
+    font-size: 1em;
+}
+img, video {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+ /* Enhanced group chat modal styles */
+#createGroupModal .modal-content {
+  border-radius: 1.2rem;
+}
+
+#createGroupModal .modal-header {
+  border-radius: 1.2rem 1.2rem 0 0;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  color: #fff;
+}
+
+#createGroupModal .form-control:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.11rem rgba(37,99,235,0.11);
+}
+
+.member-card-hover:hover,
+.member-card-hover:focus-within {
+  background: linear-gradient(90deg, #e0e7ff 0%, #f5faff 100%) !important;
+  box-shadow: 0 4px 16px 0 rgba(37,99,235,0.09);
+}
+.member-checkbox:checked ~ .flex-grow-1 ~ .checkmark {
+  display: inline !important;
+}
+@media (max-width: 768px) {
+  #createGroupModal .modal-dialog {
+    max-width: 98vw;
+    margin: 0.5rem auto;
+  }
+  #createGroupModal .modal-body {
+    padding: 1.2rem !important;
+  }
+  #createGroupModal .modal-content {
+    border-radius: 0.7rem;
+  }
+}
+
+    </style>
+</head>
+<body>
+<!-- Sidebar -->
+<div class="sidebar closed" id="sidebar">
+    <div class="logo">
+        <img src="{% static 'images/cmu.jpg' %}" alt="CMU Logo">
+        <div class="cmu-logo">City of Malabon University</div>
+    </div>
+    <nav class="nav-menu">
+        <a href="{% url 'students:dashboard' %}" class="nav-item"><i class="fas fa-home"></i><span class="nav-label">Home</span></a>
+        <a href="{% url 'students:calendar' %}" class="nav-item"><i class="fas fa-calendar"></i><span class="nav-label">Event Calendar</span></a>
+        <div class="dropdown-container">
+            <div class="teaching-header" id="teachingHeader">
+                <div class="teaching-content">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span class="nav-label">My Classes</span>
+                    <span class="class-count" id="classCount">{{ enrolled_classes|length }} classes</span>
+                </div>
+                <i class="fas fa-chevron-down dropdown-arrow" id="dropdownArrow"></i>
+            </div>
+            <div class="subjects-container" id="subjectsContainer">
+               {% if enrolled_classes %}
+    {% for class in enrolled_classes %}
+      <div class="subject-item" onclick="location.href='{% url 'students:class_detail' class.id %}'">
+        <div class="subject-avatar">{{ class.class_name|first|upper }}</div>
+        <div class="subject-info">
+          <div class="subject-name">{{ class.class_name }}</div>
+          <div class="subject-details">{{ class.section|default:"No section" }}</div>
+        </div>         
+      </div>
+    {% endfor %}
+    {% else %}
+      <div class="empty-state" id="emptyState">
+        No enrolled classes created yet.
+      </div>
+    {% endif %}
+            </div>
+        </div>
+        <a href="{% url 'students:student_announcements' %}" class="nav-item"><i class="fas fa-bullhorn"></i><span class="nav-label">Announcement</span></a>
+        <a href="{% url 'students:messages_inbox' %}" class="nav-item"><i class="fas fa-comments"></i><span class="nav-label">Messages</span></a>
+        <a href="{% url 'students:archived_classes' %}" class="nav-item"><i class="fas fa-archive"></i><span class="nav-label">Archived Classes</span></a>
+        <a href="{% url 'accounts:settings' %}" class="nav-item"><i class="fas fa-cog"></i><span class="nav-label">Settings</span></a>
+        <a href="{% url 'account_logout' %}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span class="nav-label">Logout</span></a>
+    </nav>
+</div>
+<div class="main-content">
+
+  <!-- Sidebar for Chat Contacts -->
+  <div class="chat-sidebar">
+    <div class="chat-sidebar-header d-flex justify-content-between align-items-center p-3 border-bottom">
+      <span>Contacts</span>
+    <div class="d-flex align-items-center gap-2">
+  <!-- Create Group Chat -->
+  <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createGroupModal" title="Create Group Chat">
+    <i class="fas fa-users"></i>
+  </button>
+  <!-- Add Contact -->
+</div>
+    </div>
+
+    <div class="p-2">
+      <input type="text" id="contactSearch" class="form-control form-control-sm" placeholder="Search contact...">
+    </div>
+
+    <div class="chat-contacts" id="contactList">
+      {% for contact in contacts %}
+        <a href="{% url 'students:conversation' contact.id %}"
+           class="chat-contact {% if other_user and contact.id == other_user.id %}active{% endif %}">
+          <div class="chat-contact-avatar me-2">
+            {% if contact.profile_picture %}
+              <img src="{{ contact.profile_picture.url }}" alt="{{ contact.get_full_name }}" 
+                   class="rounded-circle" style="width:45px; height:45px; object-fit:cover;">
+            {% else %}
+              <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                   style="width:45px; height:45px; font-weight:bold; font-size:18px;">
+                {{ contact.get_full_name|first|upper }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="chat-contact-name">{{ contact.get_full_name }}</div>
+        </a>
+      {% empty %}
+        <p class="text-muted p-3">No contacts available.</p>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- Chat Main -->
+  <div class="chat-main">
+    {% if other_user %}
+    <div class="chat-header d-flex align-items-center">
+      <div class="chat-header-avatar me-2">
+          {% if other_user.profile_picture %}
+          <img src="{{ other_user.profile_picture.url }}" 
+           alt="{{ other_user.get_full_name }}" 
+           class="rounded-circle" 
+           style="width:45px; height:45px; object-fit:cover;">
+          {% else %}
+        <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+           style="width:45px; height:45px; font-weight:bold; font-size:18px;">
+        {{ other_user.get_full_name|first|upper }}
+        </div>
+        {% endif %}
+      </div>
+    <div>
+    <div class="fw-semibold">{{ other_user.get_full_name }}</div>
+    <div class="text-muted small">
+      {% if other_user.is_active %}
+        Online
+      {% else %}
+        Offline
+      {% endif %}
+    </div>
+  </div>
+</div>
+    <div class="chat-messages">
+    {% for msg in messages %}
+    <div class="d-flex mb-2 {% if msg.sender == request.user %}justify-content-end{% else %}justify-content-start{% endif %}">
+      {% if msg.sender != request.user %}
+        <!-- Avatar for other user -->
+        <div class="chat-avatar me-2 d-flex align-items-end">
+          {% if msg.sender.profile_picture %}
+            <img src="{{ msg.sender.profile_picture.url }}" 
+                 alt="{{ msg.sender.get_full_name }}" 
+                 class="rounded-circle" 
+                 style="width:30px; height:30px; object-fit:cover;">
+          {% else %}
+            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                 style="width:30px; height:30px; font-size:14px; font-weight:bold;">
+              {{ msg.sender.get_full_name|first|upper }}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+      
+      <!-- Message bubble + hidden time -->
+      <div class="chat-message">
+        <div class="p-2 rounded-3 message-bubble {% if msg.sender == request.user %}bg-primary text-white{% else %}bg-light{% endif %}" 
+             style="max-width: 100%;cursor:pointer;"
+             onclick="toggleTimestamp(this)">
+          {{ msg.content }}
+        </div>
+        <div class="text-muted small mt-1 {% if msg.sender == request.user %}text-end{% endif %} message-time" style="display:none;">
+          {{ msg.timestamp|date:"M d, Y H:i" }}
+        </div>
+      </div>
+
+      {% if msg.sender == request.user %}
+        <!-- Avatar for current user -->
+        <div class="chat-avatar ms-2 d-flex align-items-end">
+          {% if msg.sender.profile_picture %}
+            <img src="{{ msg.sender.profile_picture.url }}" 
+                 alt="{{ msg.sender.get_full_name }}" 
+                 class="rounded-circle" 
+                 style="width:30px; height:30px; object-fit:cover;">
+          {% else %}
+            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center"
+                 style="width:30px; height:30px; font-size:14px; font-weight:bold;">
+              {{ msg.sender.get_full_name|first|upper }}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="text-muted">No messages yet.</p>
+  {% endfor %}
+  </div>
+      <form method="post" class="chat-input">
+        {% csrf_token %}
+        <input type="text" name="content" placeholder="Type a message..." required>
+        <button type="submit"><i class="fas fa-paper-plane"></i></button>
+      </form>
+      {% else %}
+      <div class="p-5 text-center text-muted">Select a contact to start chatting</div>
+      {% endif %}
+  </div>
+</div>
+<!-- Create Group Chat Modal -->
+<div class="modal fade" id="createGroupModal" tabindex="-1" aria-labelledby="createGroupModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <form method="post" action="">
+      {% csrf_token %}
+      <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+        <!-- Header -->
+        <div class="modal-header border-0 py-3"
+             style="background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%); color: #fff;">
+          <h5 class="modal-title fw-semibold" id="createGroupModalLabel">
+            <i class="fas fa-users me-2"></i> Create Group Chat
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body p-4" style="background:#fafbfc;">
+          <!-- Group Name -->
+          <div class="mb-4">
+            <label class="form-label fw-semibold text-secondary">Group Name</label>
+            <input type="text"
+                   name="group_name"
+                   class="form-control form-control-lg rounded-3 border-0 shadow-sm"
+                   placeholder="Enter a group name (e.g. BSIT 3A Discussion)"
+                   required>
+          </div>
+
+          <!-- Select Members -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold text-secondary mb-2">Select Members</label>
+            <div class="row row-cols-1 row-cols-sm-2 g-3" style="max-height: 340px; overflow-y: auto;">
+              {% for contact in contacts %}
+              <div class="col">
+                <label for="member_{{ contact.id }}"
+                       class="member-card bg-white border rounded-3 shadow-sm d-flex align-items-center p-3 hover-card w-100"
+                       style="cursor:pointer; transition: all 0.25s ease;">
+                  <input type="checkbox"
+                         name="members"
+                         value="{{ contact.id }}"
+                         id="member_{{ contact.id }}"
+                         class="form-check-input me-3 member-checkbox"
+                         style="transform:scale(1.2); cursor:pointer;">
+
+                  {% if contact.profile.profile_picture %}
+                    <img src="{{ contact.profile.profile_picture.url }}"
+                         alt="{{ contact.get_full_name }}"
+                         class="rounded-circle me-3 border"
+                         style="width:45px; height:45px; object-fit:cover; flex-shrink:0;">
+                  {% else %}
+                    <div class="rounded-circle bg-primary text-white fw-bold d-flex justify-content-center align-items-center me-3"
+                         style="width:45px; height:45px; font-size:16px; flex-shrink:0;">
+                      {{ contact.get_full_name|slice:":1"|upper }}
+                    </div>
+                  {% endif %}
+
+                  <div class="flex-grow-1">
+                    <span class="fw-semibold text-dark small d-block">{{ contact.get_full_name }}</span>
+                    <span class="text-muted small">{{ contact.role|title }}</span>
+                  </div>
+
+                  <span class="ms-auto checkmark" style="display:none;">
+                    <i class="fas fa-check-circle text-success fs-5"></i>
+                  </span>
+                </label>
+              </div>
+              {% empty %}
+              <div class="col-12">
+                <p class="text-muted ps-2">No contacts available.</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer border-0 py-3 bg-light rounded-bottom-4">
+          <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+            <i class="fa-solid fa-xmark me-1"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-primary px-4">
+            <i class="fa-solid fa-plus me-1"></i> Create Group
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function toggleTimestamp(element) {
+    const timeDiv = element.nextElementSibling;
+    if (timeDiv.style.display === "none" || timeDiv.style.display === "") {
+      // Hide all other timestamps
+      document.querySelectorAll('.message-time').forEach(el => el.style.display = 'none');
+      timeDiv.style.display = "block";
+    } else {
+      timeDiv.style.display = "none";
+    }
+  }
+  document.getElementById('contactSearch').addEventListener('input', function () {
+    const query = this.value.toLowerCase();
+    document.querySelectorAll('#contactList .chat-contact').forEach(el => {
+      el.style.display = el.textContent.toLowerCase().includes(query) ? '' : 'none';
+    });
+  });
+  // Sidebar open/close logic with hover area
+  const sidebar = document.getElementById('sidebar');
+  let sidebarHovered = false;
+  let hoverTimeout = null;
+
+  sidebar.addEventListener('mouseenter', () => {
+      sidebarHovered = true;
+      sidebar.classList.remove('closed');
+      if (hoverTimeout) clearTimeout(hoverTimeout);
+  });
+  sidebar.addEventListener('mouseleave', () => {
+      sidebarHovered = false;
+      hoverTimeout = setTimeout(() => {
+          if (!sidebarHovered) sidebar.classList.add('closed');
+      }, 150);
+  });
+
+  // Teaching dropdown logic (only opens if sidebar is open)
+  const teachingHeader = document.getElementById("teachingHeader");
+  const subjectsContainer = document.getElementById("subjectsContainer");
+  const dropdownArrow = document.getElementById("dropdownArrow");
+  let teachingDropdownOpen = false;
+  teachingHeader.addEventListener("click", function(e) {
+      if (sidebar.classList.contains('closed')) return;
+      subjectsContainer.classList.toggle("expanded");
+      dropdownArrow.classList.toggle("rotated");
+      teachingDropdownOpen = subjectsContainer.classList.contains("expanded");
+  });
+  // Dropdown for class card settings (unchanged)
+  document.addEventListener("DOMContentLoaded", () => {
+      const dropdowns = document.querySelectorAll(".dropdown");
+      dropdowns.forEach(dropdown => {
+          const toggle = dropdown.querySelector(".toggle-options");
+          toggle.addEventListener("click", (e) => {
+              e.preventDefault();
+              dropdown.classList.toggle("active");
+          });
+          document.addEventListener("click", (e) => {
+              if (!dropdown.contains(e.target)) {
+                  dropdown.classList.remove("active");
+              }
+          });
+      });
+  });
+</script>
+</body>
+</html>

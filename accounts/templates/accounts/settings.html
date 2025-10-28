@@ -1,0 +1,373 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CMU-LMS</title>
+
+  <!-- Bootstrap & FontAwesome -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #fff;
+      padding: 12px 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .notification-icon {
+      color: #f59e0b;
+      font-size: 1.3rem;
+      margin-right: 1rem;
+      cursor: pointer;
+    }
+
+    .user-profile {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .user-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .user-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-dropdown-menu {
+      display: none;
+      flex-direction: column;
+      position: absolute;
+      top: 110%;
+      right: 0;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .avatar-dropdown-menu a {
+      padding: 10px 16px;
+      text-decoration: none;
+      color: #333;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .avatar-dropdown-menu a:hover {
+      background: #f2f2f2;
+    }
+
+    .content-area {
+      flex: 1;
+      padding: 1rem;
+    }
+
+    .card {
+      border: none;
+      border-radius: 1rem;
+      box-shadow: 0 4px 24px rgba(59,130,246,0.08);
+      overflow: hidden;
+    }
+
+    .card-header {
+      background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%);
+      color: white;
+      border-top-left-radius: 1rem;
+      border-top-right-radius: 1rem;
+    }
+
+    .profile-photo-main {
+      width: 110px;
+      height: 110px;
+      object-fit: cover;
+      border: 4px solid #3b82f6;
+      border-radius: 50%;
+      transition: box-shadow 0.2s;
+    }
+
+    .profile-photo-main:hover {
+      box-shadow: 0 0 0 4px #8b5cf6;
+    }
+
+    .camera-btn {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #3b82f6;
+      border: none;
+      border-radius: 50%;
+      padding: 0.5em;
+      box-shadow: 0 2px 8px rgba(60,60,180,0.2);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .camera-btn:hover {
+      background: #8b5cf6;
+    }
+
+    input.form-control, .btn {
+      border-radius: 2rem !important;
+    }
+
+    .btn-warning:hover {
+      background: #8b5cf6;
+      color: white;
+    }
+@media (min-width: 768px) {
+  .row.g-4 {
+    display: flex;
+    align-items: start;
+  }
+
+  .col-md-6 {
+    display: flex;
+    flex-direction: column;
+    justify-content: start;
+  }
+}
+    @media (max-width: 768px) {
+      .header {
+        justify-content: space-between;
+        padding: 10px 16px;
+      }
+
+      h4 {
+        font-size: 1.2rem;
+      }
+
+      .content-area {
+        padding: 1rem 0.5rem;
+      }
+
+      .profile-photo-main {
+        width: 90px;
+        height: 90px;
+      }
+
+      .card-body {
+        padding: 1rem;
+      }
+
+      .btn {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="header">
+    <i class="fas fa-bell notification-icon"></i>
+    <div class="user-profile" id="userProfileDropdown">
+      <span class="fw-semibold d-none d-sm-block">{{ user.first_name }}</span>
+      <div class="user-avatar" id="userAvatarBtn">
+        {% if user.profile.display_avatar %}
+          <img src="{{ user.profile.display_avatar }}" alt="User Avatar">
+        {% else %}
+          <div class="bg-primary text-white d-flex justify-content-center align-items-center rounded-circle" 
+               style="width:40px; height:40px; font-weight:bold; font-size:18px;">
+            {{ user.first_name|default:user.username|first|upper }}
+          </div>
+        {% endif %}
+      </div>
+     <div class="avatar-dropdown-menu" id="avatarDropdownMenu">
+  <a href="{% url 'accounts:settings' %}"><i class="fas fa-cog"></i> Settings</a>
+
+  {% if user.role == "teacher" %}
+    <a href="{% url 'teachers:dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% elif user.role == "student" %}
+    <a href="{% url 'students:dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% elif user.role == "parent" %}
+    <a href="{% url 'parents:dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% elif user.role == "school_admin" %}
+    <a href="{% url 'admins:dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% elif user.is_superuser %}
+    <a href="{% url 'admin:index' %}"><i class="fas fa-home"></i> Home</a>
+  {% elif user.school_admin %}
+    <a href="{% url 'admins:dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% else %}
+    <a href="{% url 'dashboard' %}"><i class="fas fa-home"></i> Home</a>
+  {% endif %}
+
+  <a href="{% url 'account_logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+</div>
+
+    </div>
+  </header>
+
+  <!-- Settings Section -->
+  <main class="content-area container py-4">
+    <div class="card">
+      <div class="card-header d-flex align-items-center">
+        <i class="fas fa-user-cog me-2"></i> <h5 class="mb-0">Account Settings</h5>
+      </div>
+
+      <div class="card-body">
+        <div class="text-center mb-4">
+          <div class="position-relative d-inline-block">
+            {% if user.profile.display_avatar %}
+              <img src="{{ user.profile.display_avatar }}" class="rounded-circle mb-3"
+                   style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #0d6efd;">
+            {% else %}
+              <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3"
+                   style="width: 110px; height: 110px; font-size: 40px;">
+                {{ user.first_name|default:user.username|first|upper }}
+              </div>
+            {% endif %}
+            <button class="camera-btn" data-bs-toggle="modal" data-bs-target="#changePhotoModal">
+              <i class="fas fa-camera text-white"></i>
+            </button>
+          </div>
+
+          <!-- Upload Avatar Form -->
+          <form method="POST" enctype="multipart/form-data" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="avatar">
+            <input type="file" name="avatar" accept="image/*" class="form-control mb-2" required>
+            <button type="submit" class="btn btn-primary btn-sm">Upload Photo</button>
+          </form>
+          <hr>
+
+          <label class="form-label fw-bold mb-1"><i class="fas fa-user"></i> Username</label>
+          <div class="d-flex justify-content-center gap-2">
+            <form method="POST" class="d-flex gap-2">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="username">
+              <input type="text" class="form-control text-center" style="max-width:200px;" name="username" value="{{ user.username }}" required>
+              <button type="submit" class="btn btn-outline-secondary">Update</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="row text-center g-3 mb-4">
+          <div class="col-12 col-md-4">
+            <div class="bg-light p-3 rounded-3 shadow-sm">
+              <span class="text-primary fw-bold"><i class="fas fa-user-tag"></i> {{ user.role|title }}</span>
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="bg-light p-3 rounded-3 shadow-sm">
+              <i class="fas fa-calendar-day"></i> Joined: {{ user.date_joined|date:"M d, Y" }}
+            </div>
+          </div>
+          <div class="col-12 col-md-4">
+            <div class="bg-light p-3 rounded-3 shadow-sm text-success">
+              <i class="fas fa-clock"></i> Last Login: {{ user.last_login|date:"M d, Y" }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Forms -->
+        <!-- Forms -->
+<div class="row g-4">
+
+  <!-- Left Column: Change Email + Parent/Child Email -->
+  <div class="col-md-6">
+    <!-- Change Email -->
+    <h6 class="text-secondary mb-3"><i class="fas fa-envelope"></i> Change Email</h6>
+    <form method="POST" class="mb-4">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="email">
+      <input type="email" name="email" value="{{ user.email }}" class="form-control mb-2" required>
+      <button type="submit" class="btn btn-success btn-sm">Update Email</button>
+    </form>
+
+    <!-- Parent/Child Email -->
+    <h6 class="text-secondary mb-3">
+      <i class="fas fa-user-friends"></i>
+      {% if user.role == "student" %}Parent Email{% elif user.role == "parent" %}Child Email{% else %}Linked Email{% endif %}
+    </h6>
+    <form method="POST" class="mb-3">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="email">
+      <input 
+        type="email" 
+        name="email" 
+        value="{{ parent_email|default_if_none:'' }}" 
+        class="form-control mb-2" 
+        placeholder="{% if user.role == 'student' %}No parent linked yet{% elif user.role == 'parent' %}No student linked yet{% else %}No linked account{% endif %}"
+        required
+      >
+      <button type="submit" class="btn btn-outline-success btn-sm">Update Linked Email</button>
+    </form>
+  </div>
+
+  <!-- Right Column: Change Password -->
+  <div class="col-md-6">
+    <h6 class="text-secondary mb-3"><i class="fas fa-lock"></i> Change Password</h6>
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="password">
+      <input type="password" name="old_password" placeholder="Old Password" class="form-control mb-2" required>
+      <input type="password" name="new_password1" placeholder="New Password" class="form-control mb-2" required>
+      <input type="password" name="new_password2" placeholder="Confirm New Password" class="form-control mb-2" required>
+      <button type="submit" class="btn btn-warning btn-sm">Change Password</button>
+    </form>
+  </div>
+
+</div>
+
+
+        <hr>
+        <div class="mt-4">
+          <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h6>
+          <form method="POST" onsubmit="return confirm('Are you sure you want to delete this account?');">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn btn-outline-danger btn-sm">Delete Account</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const userAvatarBtn = document.getElementById("userAvatarBtn");
+    const avatarDropdownMenu = document.getElementById("avatarDropdownMenu");
+    const userProfileDropdown = document.getElementById("userProfileDropdown");
+
+    userAvatarBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      avatarDropdownMenu.style.display = avatarDropdownMenu.style.display === "flex" ? "none" : "flex";
+    });
+
+    document.addEventListener("click", e => {
+      if (!userProfileDropdown.contains(e.target)) {
+        avatarDropdownMenu.style.display = "none";
+      }
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CMU-LMS-STUDENT</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'images/cmu.jpg' %}">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f7fc; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; }
+    .confirm-box { background:#fff; padding:2rem; border-radius:12px; box-shadow:0 5px 18px rgba(0,0,0,0.12); text-align:center; max-width:480px; }
+    h2 { color:#263373; margin-bottom:0.6rem; }
+    p { color:#555; margin-bottom:1.2rem; }
+    .btn { display:inline-block; padding:0.75rem 1.4rem; border:none; border-radius:8px; cursor:pointer; font-weight:600; text-decoration:none; margin:0 0.5rem; }
+    .btn-cancel { background:#ccc; color:#333; }
+    .btn-start { background:#3949ab; color:#fff; }
+    .btn-start:hover { background:#1e88e5; }
+  </style>
+</head>
+<body>
+  <div class="confirm-box">
+    <h2>{{ quiz.title }}</h2>
+    <p>{{ quiz.description|default:"This quiz has no description." }}</p>
+    {% if quiz.duration %}
+      <p><strong>Duration:</strong> {{ quiz.duration }} minutes</p>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-start">Start Quiz</button>
+      <a href="{% url 'students:class_detail' id=quiz.class_obj.id %}" class="btn btn-cancel">Cancel</a>
+    </form>
+  </div>
+</body>
+</html>

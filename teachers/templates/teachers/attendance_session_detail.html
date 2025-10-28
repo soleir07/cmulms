@@ -1,0 +1,437 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Attendance Session — {{ session.class_obj.class_name }} ({{ session.class_obj.section }})</title>
+
+  <!-- Bootstrap & Font Awesome (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg-grad-1: #667eea;
+      --bg-grad-2: #764ba2;
+      --muted: #6b7280;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+      min-height: 100vh;
+      padding: 28px 12px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    /* Container / Card */
+    .attendance-wrapper { max-width: 1200px; margin: 0 auto; padding: 0 16px; }
+    .attendance-card {
+      background: #ffffff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(2,6,23,0.28);
+      backdrop-filter: blur(6px);
+    }
+
+    /* Header */
+    .attendance-header {
+      background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)), linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+      color: #fff;
+      padding: 28px 28px 18px;
+      position: relative;
+    }
+    .attendance-header::after {
+      content: '';
+      position: absolute;
+      right: -120px;
+      bottom: -40px;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06), transparent 40%);
+      transform: rotate(20deg);
+    }
+
+    /* Back button top-left */
+    .back-btn {
+      position: absolute;
+      left: 18px;
+      top: 18px;
+      z-index: 5;
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.14);
+      padding: 8px 12px;
+      border-radius: 10px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      text-decoration: none;
+      transition: all .18s ease;
+      backdrop-filter: blur(4px);
+    }
+    .back-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.12); }
+
+    .header-content { display:flex; gap:20px; align-items:center; flex-wrap:wrap; position:relative; z-index:2; }
+    .session-info h1 {
+      font-size: 1.6rem;
+      margin: 0 0 10px 0;
+      font-weight: 800;
+      letter-spacing: -0.2px;
+      text-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    .session-info h1 small { font-weight:600; opacity:0.95; font-size:0.92rem; }
+
+    .session-sub {
+      display:flex;
+      gap:12px;
+      align-items:center;
+      color: rgba(255,255,255,0.95);
+      font-weight:600;
+    }
+    .session-sub span {
+      background: rgba(255,255,255,0.08);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .stats-badges {
+      margin-top: 18px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .stat-badge {
+      background: rgba(255,255,255,0.95);
+      color: #0f172a;
+      font-weight: 800;
+      padding: 12px 18px;
+      border-radius: 14px;
+      min-width: 130px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      justify-content:center;
+      box-shadow: 0 8px 22px rgba(2,6,23,0.12);
+    }
+    .stat-badge i { font-size:1.15rem; color:inherit; }
+
+    /* Controls */
+    .controls {
+      padding: 20px 24px;
+      background: #f8fafc;
+      display:flex;
+      gap:12px;
+      align-items:center;
+      border-bottom: 1px solid #e6eefc;
+      flex-wrap:wrap;
+    }
+    .controls .search { flex:1; min-width:240px; max-width:480px; }
+    .controls .search .input-group-text { background:white; border-right:none; border-radius:10px 0 0 10px; border-color:#e6eefc; }
+    .controls .search .form-control { border-left:none; border-radius:0 10px 10px 0; border-color:#e6eefc; }
+    .controls .search .form-control:focus { box-shadow: 0 6px 20px rgba(102,126,234,0.08); border-color: #667eea; }
+
+    .controls .btn-group .btn {
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-weight:700;
+      border: 1px solid rgba(99,102,241,0.12);
+    }
+    .controls .btn-group .btn.active {
+      background: linear-gradient(90deg,#667eea,#764ba2);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102,126,234,0.18);
+    }
+    .controls .actions { margin-left:auto; }
+
+    .controls .actions .btn {
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-weight:700;
+      background: linear-gradient(90deg,#667eea,#764ba2);
+      color:#fff;
+      border: none;
+      box-shadow: 0 8px 28px rgba(102,126,234,0.18);
+    }
+    .controls .actions .btn:active { transform: translateY(-1px); }
+
+    /* Table */
+    .table-wrap { padding: 22px 24px 28px; background: white; }
+    table.att-table { margin-bottom:0; }
+    .att-table thead th {
+      background: #f8fafc;
+      border-bottom: 2px solid #e6eefc;
+      color: #334155;
+      font-weight: 800;
+      font-size: 0.78rem;
+      letter-spacing: 0.6px;
+      padding: 14px 12px;
+      text-transform: uppercase;
+    }
+    .att-table tbody tr { border-bottom: 1px solid #f1f5f9; transition: all .14s ease; }
+    .att-table tbody tr:hover { transform: translateY(-3px); background:#fbfdff; box-shadow: 0 8px 20px rgba(2,6,23,0.04); }
+    .att-table tbody td { padding: 14px 12px; vertical-align: middle; }
+
+    .student-cell { display:flex; gap:14px; align-items:center; }
+    .student-avatar {
+      width:54px; height:54px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-weight:800; font-size:1.15rem;
+      background: linear-gradient(120deg,#7c3aed,#2563eb);
+      overflow:hidden;
+      box-shadow: 0 8px 20px rgba(37,99,235,0.12);
+      flex-shrink:0;
+    }
+    .student-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+
+    .student-info .student-name { font-weight:800; color:#0f172a; margin-bottom:4px; }
+    .student-info .student-email { color: var(--muted); font-weight:600; font-size:0.9rem; }
+
+    .status-chip { padding:8px 14px; border-radius:999px; font-weight:800; display:inline-flex; gap:8px; align-items:center; color:#fff; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .status-present { background: linear-gradient(90deg,#10b981,#059669); }
+    .status-absent { background: linear-gradient(90deg,#ef4444,#dc2626); }
+
+    .check-time { color: var(--muted); font-weight:700; }
+
+    .empty-row { text-align:center; padding:44px; color:#94a3b8; }
+
+    /* Responsive tweaks */
+    @media (max-width: 880px) {
+      .attendance-header { padding: 20px; }
+      .back-btn { left: 12px; top: 12px; padding: 7px 10px; }
+      .controls { padding: 16px; }
+      .stat-badge { min-width: 100px; font-size: 0.9rem; padding:8px 12px; }
+      .student-avatar { width:44px; height:44px; }
+    }
+  </style>
+</head>
+<body>
+    <!-- Back button on the left (top) -->
+      <a href="javascript:history.back()" class="back-btn" title="Back to previous">
+        <i class="fa fa-chevron-left"></i>
+        <span>Back</span>
+      </a>
+<div class="attendance-wrapper">
+  <div class="attendance-card">
+
+    <!-- Header -->
+    <div class="attendance-header">
+
+      <div class="header-content">
+        <div class="session-info">
+          <h1>{{ session.class_obj.class_name }} <small>({{ session.class_obj.section }})</small></h1>
+          <div class="session-sub">
+            <span><i class="fa fa-clock"></i> {{ session.start_time }} — {{ session.end_time }}</span>
+            <span><i class="fa fa-location-dot"></i> Radius: {{ session.radius_m }}m</span>
+            <span><i class="fa fa-hashtag"></i> Session {{ session.id }}</span>
+          </div>
+
+          <div class="stats-badges">
+            <div class="stat-badge">
+              <i class="fa fa-users"></i>
+              <div id="totalCount">—</div>
+            </div>
+            <div class="stat-badge" style="color:#10b981;">
+              <i class="fa fa-check-circle"></i>
+              <div id="presentCount">—</div>
+            </div>
+            <div class="stat-badge" style="color:#ef4444;">
+              <i class="fa fa-times-circle"></i>
+              <div id="absentCount">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="input-group search">
+  <span class="input-group-text"><i class="fa fa-search"></i></span>
+  <input id="searchStudent" type="text" class="form-control" placeholder="Search students by name or email">
+</div>
+
+
+      <div class="btn-group" role="group" aria-label="filters">
+        <button class="btn active" data-filter="all" id="filterAll"><i class="fa fa-list"></i> All</button>
+        <button class="btn" data-filter="present" id="filterPresent"><i class="fa fa-check"></i> Present</button>
+        <button class="btn" data-filter="absent" id="filterAbsent"><i class="fa fa-times"></i> Absent</button>
+      </div>
+
+      <div class="actions">
+        <button id="exportCSV" class="btn"><i class="fa fa-download me-2"></i> Export CSV</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <div class="table-responsive">
+        <table class="table att-table align-middle mb-0" id="attendanceTable">
+          <thead>
+            <tr>
+              <th style="min-width:320px;">Student</th>
+              <th style="width:160px;">Status</th>
+              <th style="width:220px;">Check-in Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in records %}
+            <tr data-status="{{ record.status }}" data-student-name="{{ record.student.get_full_name|default:record.student.username|lower }}">
+              <td>
+                <div class="student-cell">
+                  <div class="student-avatar" aria-hidden="true">
+                    {% if record.student.profile_picture %}
+                      <img src="{{ record.student.profile_picture.url }}" alt="{{ record.student.get_full_name }}">
+                    {% else %}
+                      {{ record.student.get_full_name|default:record.student.username|first|upper }}
+                    {% endif %}
+                  </div>
+                  <div class="student-info">
+                    <div class="student-name">{{ record.student.get_full_name|default:record.student.username }}</div>
+                    <div class="student-email">{{ record.student.email|default:"" }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <td>
+                {% if record.status == 'present' %}
+                  <div class="status-chip status-present"><i class="fa fa-check-circle"></i> Present</div>
+                {% else %}
+                  <div class="status-chip status-absent"><i class="fa fa-times-circle"></i> Absent</div>
+                {% endif %}
+              </td>
+
+              <td>
+                <div class="check-time">{{ record.check_in_time|default:"—" }}</div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="empty-row">
+                <i class="fa fa-inbox fa-3x mb-3 opacity-25"></i><br>
+                No students found for this session.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+(function () {
+  const table = document.getElementById('attendanceTable');
+  if (!table) return;
+
+  const qsa = (sel, root=document) => Array.from((root||document).querySelectorAll(sel));
+  const updateCounts = () => {
+    const rows = qsa('tbody tr', table).filter(r => r.dataset.status);
+    const total = rows.length;
+    const present = rows.filter(r => r.dataset.status === 'present').length;
+    const absent = rows.filter(r => r.dataset.status !== 'present').length;
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('presentCount').textContent = present;
+    document.getElementById('absentCount').textContent = absent;
+  };
+
+  const applyFilter = (filter) => {
+    qsa('tbody tr', table).forEach(tr => {
+      if (!tr.dataset.status) { tr.style.display = ''; return; }
+      if (filter === 'all') tr.style.display = '';
+      else if (filter === 'present') tr.style.display = (tr.dataset.status === 'present') ? '' : 'none';
+      else if (filter === 'absent') tr.style.display = (tr.dataset.status !== 'present') ? '' : 'none';
+    });
+    updateCounts();
+  };
+
+  // Wire filter buttons
+  qsa('.btn-group [data-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      qsa('.btn-group [data-filter]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      applyFilter(btn.dataset.filter);
+    });
+  });
+
+  // Search
+  const search = document.getElementById('searchStudent');
+  if (search) {
+    search.addEventListener('input', () => {
+      const q = search.value.trim().toLowerCase();
+      qsa('tbody tr', table).forEach(tr => {
+        if (!tr.dataset.studentName) { tr.style.display = ''; return; }
+        tr.style.display = tr.dataset.studentName.includes(q) ? '' : 'none';
+      });
+      updateCounts();
+    });
+  }
+
+  // Client-side CSV export
+  function downloadCSV(filename, rows) {
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  document.getElementById('exportCSV').addEventListener('click', () => {
+    const header = ['Student', 'Status', 'Check-in Time'];
+    const rows = [header];
+    qsa('tbody tr', table).forEach(tr => {
+      if (!tr.dataset.studentName) return;
+      const student = tr.querySelector('.student-name')?.textContent?.trim() || '';
+      const status = tr.dataset.status === 'present' ? 'Present' : 'Absent';
+      const time = tr.querySelector('.check-time')?.textContent?.trim() || '';
+      rows.push([student, status, time]);
+    });
+    const fname = 'attendance_session_{{ session.id }}.csv';
+    downloadCSV(fname, rows);
+  });
+
+  // initialize counts
+  updateCounts();
+})();
+
+
+(function() {
+  const search = document.getElementById('searchStudent');
+  const table = document.getElementById('attendanceTable');
+  if (!search || !table) return;
+
+  const rows = Array.from(table.querySelectorAll('tbody tr'));
+
+  search.addEventListener('input', () => {
+    const query = search.value.trim().toLowerCase();
+
+    rows.forEach(row => {
+      const name = row.dataset.studentName || '';
+      const emailElem = row.querySelector('.student-email');
+      const email = emailElem ? emailElem.textContent.trim().toLowerCase() : '';
+
+      if (name.includes(query) || email.includes(query)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>

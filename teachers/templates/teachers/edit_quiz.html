@@ -1,0 +1,28 @@
+{% load static %} 
+<div class="container mt-5">
+    <h2>Edit Quiz: {{ quiz.title }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="quiz-title" class="form-label">Title</label>
+            <input type="text" class="form-control" id="quiz-title" name="title" value="{{ quiz.title }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="quiz-description" class="form-label">Description</label>
+            <input type="text" class="form-control" id="quiz-description" name="description" value="{{ quiz.description }}">
+        </div>
+        <div class="mb-3">
+            <label for="quiz-duration" class="form-label">Duration (mins)</label>
+            <input type="number" class="form-control" id="quiz-duration" name="duration" value="{{ quiz.duration }}" min="1" max="180" required>
+        </div>
+        <div class="mb-3">
+            <label for="quiz-type" class="form-label">Type</label>
+            <select class="form-select" id="quiz-type" name="quiz_type">
+                <option value="quiz" {% if quiz.quiz_type == "quiz" %}selected{% endif %}>Quiz</option>
+                <option value="exam" {% if quiz.quiz_type == "exam" %}selected{% endif %}>Exam</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{% url 'teachers:subject' quiz.class_obj.id %}" class="btn btn-secondary ms-2">Back to Classwork</a>
+    </form>
+</div>

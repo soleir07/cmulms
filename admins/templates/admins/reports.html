@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reports | CMU LMS</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background: #f6f8fb; font-family: Inter, Arial, sans-serif; }
+    .card { border: none; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+    .stat-icon { font-size: 1.6rem; color: #3F51B5; }
+    .chart-wrap { height: 320px; }
+    .export-btns { gap: 0.5rem; }
+    .btn-dashboard { background-color: #3F51B5; color: #fff; }
+    .btn-dashboard:hover { background-color: #303F9F; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h3><i class="bi bi-file-earmark-bar-graph me-2"></i>Reports</h3>
+      <div class="d-flex align-items-center export-btns">
+        <a href="{% url 'admins:dashboard' %}" class="btn btn-dashboard btn-sm me-2"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+        <a href="{% url 'admins:reports_export_csv' %}" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-spreadsheet"></i> Export CSV</a>
+        <a href="{% url 'admins:reports_export_pdf' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-pdf"></i> Export PDF</a>
+      </div>
+    </div>
+
+    <!-- Top summary -->
+    <div id="summary-cards" class="row g-4">
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-people stat-icon me-3"></i>
+            <div>
+              <small class="text-muted">Total Users</small>
+              <div id="total-users" class="h4 mb-0">{{ user_counts.total }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-person-badge stat-icon me-3"></i>
+            <div>
+              <small class="text-muted">Teachers</small>
+              <div id="teachers-count" class="h4 mb-0">{{ user_counts.teachers }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-people stat-icon me-3"></i>
+            <div>
+              <small class="text-muted">Students</small>
+              <div id="students-count" class="h4 mb-0">{{ user_counts.students }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card p-3">
+          <div class="d-flex align-items-center">
+            <i class="bi bi-people-fill stat-icon me-3"></i>
+            <div>
+              <small class="text-muted">Parents</small>
+              <div id="parents-count" class="h4 mb-0">{{ user_counts.parents }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4 mt-3">
+      <div class="col-lg-4">
+        <div class="card p-3">
+          <h6 class="mb-3">User Role Distribution</h6>
+          <div class="chart-wrap">
+            <canvas id="userRoleChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card p-3">
+          <h6 class="mb-3">Students per Class</h6>
+          <div class="chart-wrap">
+            <canvas id="studentsPerClassChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card p-3">
+          <h6 class="mb-3">Average Quiz Score (per Class)</h6>
+          <div class="chart-wrap">
+            <canvas id="avgQuizScoreChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submission summary -->
+    <div class="row g-4 mt-3">
+      <div class="col-12">
+        <div class="card p-3">
+          <h6 class="mb-3">Submission Summary</h6>
+          <div id="submission-summary">
+            <strong>Assigned:</strong> {{ submission_counts.assigned }} &nbsp;
+            <strong>Turned In:</strong> {{ submission_counts.turned_in }} &nbsp;
+            <strong>Missing:</strong> {{ submission_counts.missing }} &nbsp;
+            <strong>Graded:</strong> {{ submission_counts.graded }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Chart.js + datalabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+  <script>
+    const ctxRole = document.getElementById('userRoleChart').getContext('2d');
+    const ctxStudents = document.getElementById('studentsPerClassChart').getContext('2d');
+    const ctxQuiz = document.getElementById('avgQuizScoreChart').getContext('2d');
+
+    let roleChart, studentsChart, quizChart;
+
+    function renderCharts(data) {
+      const { user_counts, class_labels, students_per_class, avg_score_labels, avg_scores } = data;
+
+      // update summary cards
+      document.getElementById('total-users').textContent = user_counts.total;
+      document.getElementById('teachers-count').textContent = user_counts.teachers;
+      document.getElementById('students-count').textContent = user_counts.students;
+      document.getElementById('parents-count').textContent = user_counts.parents;
+
+      // destroy old charts if exist
+      if (roleChart) roleChart.destroy();
+      if (studentsChart) studentsChart.destroy();
+      if (quizChart) quizChart.destroy();
+
+      const total = (user_counts.teachers + user_counts.students + user_counts.parents) || 1;
+
+      // User Role Donut
+      roleChart = new Chart(ctxRole, {
+        type: 'doughnut',
+        data: {
+          labels: ['Teachers','Students','Parents'],
+          datasets: [{
+            data: [user_counts.teachers, user_counts.students, user_counts.parents],
+            backgroundColor: ['#3F51B5','#4CAF50','#FFC107'],
+            borderColor: '#fff', borderWidth: 2
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            datalabels: {
+              color: '#fff',
+              formatter: (value) => ((value / total) * 100).toFixed(1) + '%'
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const val = ctx.parsed;
+                  const pct = ((val / total) * 100).toFixed(1);
+                  return `${ctx.label}: ${val} (${pct}%)`;
+                }
+              }
+            }
+          },
+          cutout: '60%',
+          responsive: true
+        },
+        plugins: [ChartDataLabels]
+      });
+
+      // Students per class
+      studentsChart = new Chart(ctxStudents, {
+        type: 'bar',
+        data: {
+          labels: class_labels,
+          datasets: [{
+            label: 'Students',
+            data: students_per_class,
+            backgroundColor: '#5C6BC0'
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      // Average quiz score
+      quizChart = new Chart(ctxQuiz, {
+        type: 'line',
+        data: {
+          labels: avg_score_labels,
+          datasets: [{
+            label: 'Avg Score',
+            data: avg_scores,
+            borderColor: '#3F51B5',
+            backgroundColor: 'rgba(63,81,181,0.12)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { suggestedMin: 0, suggestedMax: 100 } },
+          responsive: true
+        }
+      });
+    }
+
+    // Fetch report data (AJAX)
+    async function fetchReportData() {
+      const res = await fetch("{% url 'admins:reports_data' %}");
+      const data = await res.json();
+      renderCharts(data);
+    }
+
+    // Initial load
+    fetchReportData();
+
+    // Auto refresh every 10 seconds
+    setInterval(fetchReportData, 10000);
+  </script>
+</body>
+</html>

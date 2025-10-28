@@ -1,0 +1,424 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --main-bg: #f6f8fa;
+            --panel-bg: #fff;
+            --primary: #1877f2;
+            --primary-dark: #1565c0;
+            --success: #42b72a;
+            --success-dark: #36a420;
+            --warning: #f57c00;
+            --danger: #e63946;
+            --border: #e0e3e7;
+            --shadow: 0 4px 16px 0 rgba(30,42,82,.08);
+            --radius: 12px;
+            --focus: #a2c5fa;
+        }
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            background: var(--main-bg);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .quiz-creator {
+            margin: 40px 0;
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            max-width: 880px;
+            width: 100%;
+            padding: 36px 32px 32px 32px;
+            position: relative;
+            transition: box-shadow .2s;
+        }
+        .quiz-creator h1 {
+            font-size: 2.1rem;
+            font-weight: 700;
+            margin: 0 0 28px 0;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+        .quiz-settings {
+            background: #f3f6fa;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 28px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px 24px;
+            align-items: flex-end;
+        }
+        .quiz-settings label {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #2d333b;
+            display: block;
+        }
+        .quiz-settings input[type="text"], .quiz-settings input[type="number"], .quiz-settings select {
+            min-width: 120px;
+            font-size: 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            padding: 8px 12px;
+            outline: none;
+            margin-bottom: 0;
+            background: #fff;
+            transition: border-color .16s;
+        }
+        .quiz-settings input:focus, .quiz-settings select:focus {
+            border-color: var(--focus);
+            box-shadow: 0 0 0 2px var(--focus);
+        }
+        .quiz-settings button {
+            background: var(--success);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 7px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background .18s;
+        }
+        .quiz-settings button:hover {
+            background: var(--success-dark);
+        }
+        .quiz-settings .restart-btn {
+            background: var(--warning);
+            color: #fff;
+        }
+        .quiz-settings .restart-btn:hover {
+            background: #e65100;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .controls button {
+            border: none;
+            border-radius: 7px;
+            padding: 11px 18px;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 1px 2px #e3e8ee50;
+            transition: background .18s;
+        }
+        .controls button:hover {
+            background: var(--primary-dark);
+        }
+        #questions-container {
+            margin-bottom: 12px;
+        }
+        .question-block {
+            background: #f9fafc;
+            border: 1.5px solid var(--border);
+            padding: 24px 18px 16px 18px;
+            border-radius: 10px;
+            margin-bottom: 22px;
+            box-shadow: 0 2px 6px #e0e3e7;
+            transition: box-shadow .14s, border .18s;
+            position: relative;
+            animation: fadeIn .5s;
+        }
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(20px);}
+            to {opacity: 1; transform: translateY(0);}
+        }
+        .question-block label {
+            display: block;
+            font-weight: 600;
+            color: #274472;
+            font-size: 1.08rem;
+            margin-bottom: 7px;
+        }
+        .question-block input[type="text"],
+        .question-block textarea {
+            width: 100%;
+            padding: 9px 12px;
+            margin-bottom: 10px;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            font-size: 1rem;
+            background: #fff;
+            transition: border-color .15s;
+        }
+        .question-block input[type="text"]:focus, .question-block textarea:focus {
+            border-color: var(--focus);
+            box-shadow: 0 0 0 2px var(--focus);
+        }
+        .question-block textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        .options-container {
+            margin-bottom: 7px;
+        }
+        .options-container .option {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 6px;
+        }
+        .options-container .option input[type="radio"] {
+            accent-color: var(--primary);
+        }
+        .options-container .option input[type="text"] {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .add-option-btn {
+            background: #e3f2fd;
+            color: var(--primary-dark);
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: .98rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background .15s, color .15s;
+        }
+        .add-option-btn:hover {
+            background: #bbdefb;
+            color: #0d47a1;
+        }
+        .remove-question-btn {
+            position: absolute;
+            top: 13px;
+            right: 13px;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            padding: 6px 12px;
+            font-size: .93rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 1px 4px #e0e3e7;
+            transition: background .16s;
+        }
+        .remove-question-btn:hover {
+            background: #c1121f;
+        }
+        .submit-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 26px;
+        }
+        .submit-quiz-btn {
+            border: none;
+            border-radius: 7px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 1.15rem;
+            font-weight: 600;
+            padding: 13px 0;
+            cursor: pointer;
+            width: 50%;
+            box-shadow: 0 2px 8px #e0e3e7;
+            transition: background .2s;
+        }
+        .submit-quiz-btn.save-draft {
+            background: #6c757d;
+        }
+        .submit-quiz-btn:hover:not(.save-draft) {
+            background: var(--primary-dark);
+        }
+        .submit-quiz-btn.save-draft:hover {
+            background: #495057;
+        }
+        .back-button {
+            position: absolute;
+            top: 25px;
+            left: 35px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 7px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 1px 6px #e0e3e7;
+            z-index: 9;
+            transition: background .18s;
+        }
+        .back-button:hover {
+            background: var(--primary-dark);
+        }
+        @media (max-width: 700px) {
+            .quiz-creator {
+                padding: 20px 6px 26px 6px;
+            }
+            .back-button {
+                left: 10px;
+                top: 10px;
+            }
+            .quiz-settings {
+                flex-direction: column;
+                gap: 10px 0;
+            }
+            .submit-row {
+                flex-direction: column;
+            }
+            .submit-quiz-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="{% url 'teachers:subject' class_obj.id %}" class="back-button">Back to Classwork</a>
+    <div class="quiz-creator">
+        <h1>
+            <span style="color: var(--primary);">Create a Questionnaire</span>
+        </h1>
+        <form id="quiz-form" method="post">
+            {% csrf_token %}
+            <div class="quiz-settings">
+                <div style="flex: 2;">
+                    <label for="quiz-title">Title</label>
+                    <input type="text" id="quiz-title" name="title" form="quiz-form" placeholder="Enter quiz/exam title" required>
+                </div>
+                <div style="flex: 2;">
+                    <label for="quiz-description">Description</label>
+                    <input type="text" id="quiz-description" name="description" form="quiz-form" placeholder="Enter description (optional)">
+                </div>
+                <div>
+                    <label for="quiz-duration">Duration (mins)</label>
+                    <input type="number" id="quiz-duration" name="duration" form="quiz-form" min="1" max="180" value="30" required>
+                </div>
+                <div>
+                    <label for="quiz-type">Type</label>
+                    <select name="quiz_type" id="quiz-type" form="quiz-form">
+                        <option value="quiz">Quiz</option>
+                        <option value="exam">Exam</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="num-questions"># of Questions</label>
+                    <input type="number" id="num-questions" min="1" max="100" value="1">
+                </div>
+                <div>
+                    <button type="button" id="generate-questions-btn" title="Generate question blocks">Generate Questions</button>
+                </div>
+                <div>
+                    <button type="button" class="restart-btn" onclick="resetQuizForm()" title="Reset all fields and questions">Restart Quiz</button>
+                </div>
+            </div>
+            <div class="controls">
+                <button type="button" onclick="addQuestion('multiple-choice')" title="Add Multiple Choice Question">+ Multiple Choice</button>
+                <button type="button" onclick="addQuestion('identification')" title="Add Identification Question">+ Identification</button>
+                <button type="button" onclick="addQuestion('essay')" title="Add Essay Question">+ Essay</button>
+            </div>
+            <div id="questions-container"></div>
+            <div class="submit-row">
+                <button type="submit" name="action" value="save" class="submit-quiz-btn">Save</button>
+                <button type="submit" name="action" value="draft" class="submit-quiz-btn save-draft">Save as Draft</button>
+            </div>
+        </form>
+    </div>
+    <script>
+        let questionCounter = 0;
+
+        function addQuestion(type) {
+            questionCounter++;
+            const container = document.getElementById('questions-container');
+            const questionBlock = document.createElement('div');
+            questionBlock.className = 'question-block';
+            questionBlock.id = 'question-' + questionCounter;
+
+            let content = `
+                <label for="question_text_${questionCounter}">Question ${questionCounter}:</label>
+                <input type="text" id="question_text_${questionCounter}" name="question_text_${questionCounter}" placeholder="Enter your question" required autocomplete="off">
+                <input type="hidden" name="question_type_${questionCounter}" value="${type}">
+                <button type="button" class="remove-question-btn" onclick="removeQuestion(${questionCounter})" title="Remove this question">Remove</button>
+            `;
+
+            if (type === 'multiple-choice') {
+                content += `
+                    <div class="options-container" id="options-${questionCounter}">
+                        <div class="option">
+                            <input type="radio" name="correct_option_${questionCounter}" value="0" checked aria-label="Correct answer">
+                            <input type="text" name="option_${questionCounter}_0" placeholder="Option 1" required>
+                        </div>
+                        <div class="option">
+                            <input type="radio" name="correct_option_${questionCounter}" value="1" aria-label="Correct answer">
+                            <input type="text" name="option_${questionCounter}_1" placeholder="Option 2" required>
+                        </div>
+                    </div>
+                    <button type="button" class="add-option-btn" onclick="addOption(${questionCounter})">+ Add Option</button>
+                `;
+            } else if (type === 'identification') {
+                content += `<input type="text" name="answer_${questionCounter}" placeholder="Enter the correct answer" required>`;
+            } else if (type === 'essay') {
+                content += `<textarea placeholder="Student will write their answer here" disabled></textarea>`;
+            }
+
+            questionBlock.innerHTML = content;
+            container.appendChild(questionBlock);
+            questionBlock.scrollIntoView({behavior: "smooth", block: "center"});
+        }
+
+        function removeQuestion(id) {
+            const q = document.getElementById('question-' + id);
+            if (q) {
+                q.style.opacity = 0;
+                setTimeout(() => q.remove(), 220);
+            }
+        }
+
+        function addOption(questionId) {
+            const optionsContainer = document.getElementById(`options-${questionId}`);
+            const optionCount = optionsContainer.querySelectorAll('.option').length;
+            const newOption = document.createElement('div');
+            newOption.className = 'option';
+            newOption.innerHTML = `
+                <input type="radio" name="correct_option_${questionId}" value="${optionCount}" aria-label="Correct answer">
+                <input type="text" name="option_${questionId}_${optionCount}" placeholder="Option ${optionCount + 1}" required>
+            `;
+            optionsContainer.appendChild(newOption);
+            newOption.querySelector('input[type="text"]').focus();
+        }
+
+        document.getElementById('generate-questions-btn').addEventListener('click', function() {
+            const numQuestions = parseInt(document.getElementById('num-questions').value);
+            const questionsContainer = document.getElementById('questions-container');
+            questionsContainer.innerHTML = ''; // Clear existing questions
+            questionCounter = 0; // Reset counter
+
+            for (let i = 0; i < numQuestions; i++) {
+                addQuestion('multiple-choice'); // Default to multiple-choice
+            }
+        });
+
+        function resetQuizForm() {
+            if (confirm("Restarting will clear all fields and questions. Continue?")) {
+                document.getElementById('quiz-form').reset();
+                document.getElementById('questions-container').innerHTML = "";
+                questionCounter = 0;
+            }
+        }
+    </script>
+</body>
+</html>

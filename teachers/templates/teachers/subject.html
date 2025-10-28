@@ -1,0 +1,1998 @@
+{% load static %}
+{% load dict_extras %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMU-LMS-TEACHER</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'images/cmu.jpg' %}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+  <style>
+   /* Sidebar core */
+.sidebar {
+    width: 280px;
+    background: linear-gradient(180deg, #1e40af, #3b82f6);
+    color: #fff;
+    height: 100vh;
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.28s cubic-bezier(.4,2,.7,.9);
+    overflow: hidden;
+}
+.sidebar.closed {
+    width: 65px;
+}
+.sidebar .logo {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.1);
+    transition: padding .3s;
+}
+.sidebar.closed .logo { padding: 20px 12px; }
+.logo img {
+    width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; transition: margin 0.3s;
+}
+.sidebar.closed .logo img { margin-right: 0; }
+.cmu-logo {
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    white-space: nowrap;
+    transition: opacity 0.18s, width 0.18s;
+}
+.sidebar.closed .cmu-logo {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+/* Nav styles */
+.nav-menu { flex: 1; padding: 16px 0;}
+.nav-item:hover, .nav-item.active {
+    background: rgba(255,255,255,0.15);
+    color: white; 
+    transform: translateX(5px);}
+.nav-item {
+    display: flex; align-items: center; padding: 16px 24px;
+    color: white; text-decoration: none;
+    transition: all 0.22s;
+    font-size: 0.97rem; font-weight: 500;
+    white-space: nowrap;
+}
+.nav-item i { margin-right: 15px; color: white; min-width: 21px;}
+.sidebar.closed .nav-item { justify-content: center; padding: 16px 0; }
+.sidebar.closed .nav-item i { margin-right: 0;}
+.sidebar.closed .nav-item .nav-label { display: none; }
+.nav-item .nav-label { display: inline; transition: opacity 0.2s;}
+/* Hide nav-label if sidebar closed */
+.sidebar.closed .nav-item .nav-label { display: none; }
+
+/* Dropdown and teaching */
+.dropdown-container { position: relative; }
+.sidebar.closed .dropdown-container .teaching-header { justify-content: center; }
+.sidebar.closed .dropdown-arrow,
+.sidebar.closed .class-count,
+.sidebar.closed .teaching-content span,
+.sidebar.closed .teaching-content .nav-label { display: none !important; }
+.sidebar.closed .subjects-container { display: none !important; }
+.teaching-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.teaching-header:hover { transform: translateY(-1px); }
+.teaching-header.active { background: rgba(255,255,255,0.1); border-radius: 8px; }
+.teaching-content { display: flex; align-items: center; color: white; }
+.teaching-content i {
+    width: 32px; height: 32px; border-radius: 50%; margin-right: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; color: white;
+}
+.dropdown-arrow { color: white; font-size: 14px; transition: transform 0.3s ease; }
+.dropdown-arrow.rotated { transform: rotate(180deg); }
+.subjects-container {
+    overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 0; opacity: 0; margin-top: 0;
+}
+.subjects-container.expanded { max-height: 500px; opacity: 1; margin-top: 12px; }
+.subject-item {
+    display: flex; align-items: center; background: transparent; margin-bottom: 8px; padding: 14px 16px; border-radius: 50px; cursor: pointer; transition: all 0.2s; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.3);
+}
+.subject-item:last-child { margin-bottom: 0; }
+.subject-item:hover { background: rgba(255,255,255,0.1); transform: translateX(4px); box-shadow: 0 4px 12px rgba(0,0,0,0.1);}
+.subject-avatar { width: 24px; height: 24px; border-radius: 50%; background: #74b9ff; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: 600; font-size: 12px; color: white;}
+.subject-content { flex: 1;}
+.subject-name { color: white; font-weight: 600; font-size: 16px; margin: 0;}
+.subject-details { color: rgba(255,255,255,0.7); font-size: 12px; margin: 2px 0 0 0;}
+.class-count { background: rgba(255,255,255,0.2); color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+.delete-subject-btn { background: rgba(220,38,38,0.8); color: white; border: none; width: 20px; height: 20px; border-radius: 50%; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; margin-left: 8px;}
+.delete-subject-btn:hover { background: rgba(220,38,38,1); transform: scale(1.1); }
+
+/* Sidebar hover trigger area */
+.sidebar-hover-area {
+    position: fixed;
+    left: 0; top: 0;
+    width: 22px; height: 100vh;
+    z-index: 1050;
+    background: transparent;
+}
+
+    /* Header */
+    /* Main content */
+.main-content {
+    margin-left: 280px;
+    transition: margin-left 0.28s cubic-bezier(.4,2,.7,.9);
+}
+.sidebar.closed ~ .main-content {
+    margin-left: 65px;
+}
+
+    .header { background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 15px 25px; display: flex; justify-content: space-between;
+      align-items: center; position: sticky; top: 0; z-index: 999; }
+    .header h5 { margin: 0; font-weight: 600; }
+   
+
+    /* Banner */
+    .banner {
+      background: url("{% if class_obj.banner %}{{ class_obj.banner.url }}{% else %}{% static 'images/default-banner.jpg' %}{% endif %}") center/cover no-repeat;
+      height: 180px; border-radius: 12px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 20px; margin: 20px; color: #fff; position: relative;
+    }
+    .banner::after { content: ""; position: absolute; inset: 0;
+      background: rgba(0,0,0,0.4); border-radius: 12px; }
+    .banner h2, .banner p { position: relative; margin: 0; z-index: 2; }
+
+    /* Tabs */
+    .nav-tabs { display: flex; justify-content: center;
+      background: #fff; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin: 10px 20px 20px; overflow: hidden; }
+    .nav-tab { flex: 1; text-align: center; padding: 12px;
+      cursor: pointer; transition: all .3s; }
+    .nav-tab.active { background: #e8f0fe; border-bottom: 3px solid #f1f3f6; font-weight: bold; }
+
+    .tab-section { display: none; margin: 0 20px; }
+    .tab-section.active { display: block; }
+
+    .card { border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    /* Classwork expandable cards */
+    .work-card { border-radius: 12px; overflow: visible; }
+    .work-header { cursor: pointer; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+    .work-title { font-weight: 600; margin: 0; }
+    .work-subtitle { color: #6c757d; font-size: 0.9rem; }
+    .work-stats { display: flex; gap: 24px; color: #6c757d; }
+    .work-details { display: none; border-top: 1px solid rgba(0,0,0,0.06); padding: 14px 16px; background: #fff; }
+    .work-card.open .work-details { display: block; }
+    .chevron { transition: transform .2s ease; }
+    .work-card.open .chevron { transform: rotate(180deg); }
+    .user-profile { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; }
+        .user-avatar {
+            width: 40px; 
+            height: 40px; 
+            border-radius: 50%;
+            overflow: hidden; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .user-avatar img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; }
+/* Empty state */
+.empty-state {
+  font-size: 0.9rem;
+  color: #888;
+  padding: 8px 0;
+  text-align: center;
+}
+.nav-item.active {
+  background: rgba(255,255,255,0.2);
+  border-left: 4px solid #fff;
+}
+/* Base styling like nav-item */
+.enrolled-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  color: #fff;
+  text-decoration: none;
+  position: relative;
+}
+
+.enrolled-item:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.enrolled-item.active {
+  background: rgba(255,255,255,0.2);
+  border-left: 4px solid #fff;
+}
+
+/* Container transition */
+.subjects-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-in-out, padding 0.3s ease-in-out;
+    padding: 0 10px;
+}
+
+.subjects-container.expanded {
+    max-height: 500px; /* enough to fit multiple classes */
+    padding: 10px;
+}
+
+/* Arrow rotation */
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+}
+
+.dropdown-arrow.rotate {
+    transform: rotate(180deg);
+}
+
+/* Each class item */
+.subject-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-bottom: 5px;
+    transition: background 0.2s;
+}
+
+.subject-item:hover {
+    background: #f2f2f268;
+}
+
+.delete-form {
+    margin-left: 10px;
+}
+
+.delete-btn {
+    background: transparent;
+    border: none;
+    color: #dc3545; /* red */
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.delete-btn:hover {
+    color: #a71d2a; /* darker red on hover */
+}
+.dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        bottom: 100%;  /* makes it appear above footer */
+        right: 0;
+        background:white;
+        min-width: 150px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+        border-radius: 6px;
+        z-index: 10;
+    }
+
+    .dropdown-menu a {
+        display: block;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #333;
+        font-size: 14px;
+    }
+
+    .dropdown-menu a:hover {
+        background: #f5f5f5;
+    }
+
+    .dropdown.active .dropdown-menu {
+        display: block;
+    }
+
+ /* People Section*/ 
+    .people-section {
+  margin-top: 12px;
+}
+
+.person-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.person-item:last-child {
+  border-bottom: none;
+}
+
+.person-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #74b9ff;
+  color: white;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  overflow: hidden;
+}
+
+.person-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.person-info {
+  flex: 1;
+}
+
+.person-name {
+  font-weight: 600;
+  margin: 0;
+}
+
+.person-role {
+  font-size: 0.8rem;
+  color: rgba(0,0,0,0.6);
+  margin: 0;
+}
+.person-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-remove-student,
+.btn-message-student {
+  border: none;
+  background: rgba(220,38,38,0.8);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-remove-student:hover {
+  background: rgba(220,38,38,1);
+  transform: scale(1.1);
+}
+
+.btn-message-student {
+  background: rgba(29,161,242,0.8);
+}
+
+.btn-message-student:hover {
+  background: rgba(29,161,242,1);
+  transform: scale(1.1);
+}
+
+/* Dropdown styles */
+  .dropdown-menu-custom {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    background: #fff;
+    border-radius: 16px;
+    min-width: 240px;
+    box-shadow: 0 6px 20px rgba(34, 60, 80, 0.15);
+    padding: 10px 0;
+    z-index: 1000;
+    animation: fadeIn 0.25s ease-in-out;
+  }
+  .dropdown-item-custom {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    font-size: 15px;
+    transition: background 0.2s, padding-left 0.2s;
+  }
+  .dropdown-item-custom i {
+    font-size: 18px;
+  }
+  .dropdown-item-custom:hover {
+    background: #f8f9fa;
+    padding-left: 28px;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-10px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+
+  /* Assignment details toggle */
+  .work-details {
+    display: none;
+    padding: 15px;
+    border-top: 1px solid #eee;
+  }
+  .work-card.active .work-details {
+    display: block;
+  }
+  .work-card .chevron {
+    transition: transform 0.3s;
+  }
+  .work-card.active .chevron {
+    transform: rotate(180deg);
+  }
+  /* Floating context menu for assignment actions */
+  .ctx-menu {
+    position: fixed;
+    display: none;
+    background: #fff;
+    border-radius: 10px;
+    min-width: 180px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+    z-index: 2000;
+    padding: 6px 0;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .ctx-item:hover { background: #f6f7f9; }
+  .ctx-sep { height: 1px; background: #eee; margin: 4px 0; }
+  /* Button styling */
+  .bttn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    z-index: 10; /* higher than overlay */
+  }
+  .bttn:hover { background: #0056b3; }
+/* Modal styles */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+  }
+  .modal-content {
+    background: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    text-align: left;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+  }
+  .modal-header { font-size: 18px; margin-bottom: 10px; font-weight: bold; }
+  .close { float: right; font-size: 20px; cursor: pointer; }
+  .modal input, .modal select {
+    width: 100%; padding: 8px; margin: 6px 0 12px; border: 1px solid #ccc; border-radius: 5px;
+  }
+  .save-btn {
+    background: #28a745; color: #fff; border: none;
+    padding: 10px 14px; border-radius: 6px; cursor: pointer;
+  }
+  .save-btn:hover { background: #1e7e34; }
+  /* Grades table */  
+  .grades-table th, .grades-table td {
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.5em;
+  }
+   .grades-table th, .grades-table td {
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.5em;
+  }
+  /* Mobile view */
+  @media (max-width: 768px) {
+    .grades-table {
+      font-size: 0.85rem;
+    }
+    .grades-table th, .grades-table td {
+      min-width: 120px;
+    }
+  }
+  /*drop down in profile*/
+       .user-profile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+.user-profile .user-avatar img {
+    width: 37px;
+    height: 37px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #4e54c8;
+}
+.avatar-dropdown-menu {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    top: 100%; right: 0;
+    background: #fff;
+    min-width: 120px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    z-index: 1001;
+    margin-top: 8px;
+    padding: 8px 0;
+}
+.avatar-dropdown-menu a {
+    display: flex; align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.17s;
+}
+.avatar-dropdown-menu a:hover {
+    background: #f2f2f2;
+}
+
+
+/* Optionally add this in your CSS file or inside <style> tags */
+.card .btn-light:hover, .card .btn-outline-danger:hover {
+  box-shadow: 0 2px 8px rgba(79,140,255,0.15);
+  transform: translateY(-2px) scale(1.05);
+}
+.list-group-item-action:hover {
+  background: #eaf6ff !important;
+}
+.modal-backdrop { z-index: 1040 !important; }
+.modal { z-index: 1050 !important; }
+
+
+.recent-activity-card {
+  border-radius: 18px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  background: #fff;
+  box-shadow: 0 6px 32px rgba(30, 64, 175, 0.09);
+}
+.activity-header {
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  padding: 18px 24px;
+  background: #fff;
+  border-bottom: 1px solid #f4f6fa;
+}
+.activity-icon {
+  background: #fff8e1;
+  color: #f59e42;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 7px rgba(245, 158, 66, 0.09);
+  font-size: 21px;
+}
+.activity-item {
+  border: none;
+  border-left: 4px solid transparent;
+  border-radius: 0;
+  padding: 18px 24px;
+  background: #fff;
+  transition: background 0.17s, border-color 0.2s;
+}
+.activity-item:hover {
+  background: #f2f6fb;
+  border-left: 4px solid #2563eb;
+  text-decoration: none;
+}
+.bg-activity-unread {
+  background: #f2f7fd !important;
+  border-left: 4px solid #f59e42 !important;
+}
+.activity-message {
+  font-size: 1rem;
+  color: #1e293b;
+  margin-bottom: 3px;
+}
+.menu-trigger {
+  opacity: 0.65;
+  font-size: 1.1rem;
+  transition: opacity 0.16s, color 0.13s;
+}
+.menu-trigger:hover { opacity: 1; color: #2563eb !important; }
+@media (max-width: 600px) {
+  .recent-activity-card, .activity-header, .activity-item {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+}
+
+/* Classwork Section */
+
+.category {
+  border-radius: 10px;
+  background: #f8f9fa;
+  padding: 1.5rem 1rem 1rem 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.category-header {
+  font-weight: 700;
+  font-size: 1.15rem;
+  background: #e9ecef;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  transition: background .2s;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  cursor: pointer;
+}
+
+.category-header:hover {
+  background: #dde4ea;
+}
+
+.work-card.card {
+  border-left: 5px solid #0d6efd;
+  transition: box-shadow .18s, transform .18s;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.work-card.card.attendance { border-left-color: #6c757d; }
+.work-card.card.quiz { border-left-color: #198754; }
+
+.work-card.card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.11);
+  transform: translateY(-2px) scale(1.012);
+}
+
+.work-header {
+  padding: 1rem;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.work-title {
+  font-size: 1.13em;
+  font-weight: 600;
+  margin-bottom: 0.15em;
+}
+
+.work-subtitle {
+  color: #6c757d;
+  font-size: 0.98em;
+}
+
+.work-stats span {
+  margin-right: 1.2em;
+  font-size: 0.97em;
+}
+.work-stats strong {
+  font-size: 1.1em;
+  margin-right: 0.23em;
+}
+.work-stats .badge {
+  font-size: 0.93em;
+  margin-right: 0.12em;
+}
+
+/* Details animation */
+.work-details {
+  background: #f6f8fa;
+  padding: 1.1em 1.6em 1.2em 3.8em;
+  border-top: 1px solid #e9ecef;
+  font-size: 1em;
+  transition: max-height .35s cubic-bezier(.4,0,.2,1), opacity .17s;
+  max-height: 400px;
+  opacity: 1;
+  overflow: hidden;
+}
+.work-details.collapsed {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.menu-trigger {
+  border: none;
+  background: transparent;
+  font-size: 1.3em;
+  color: #adb5bd;
+  cursor: pointer;
+  outline: none;
+}
+
+.menu-trigger:focus,
+.menu-trigger:hover {
+  color: #495057;
+}
+
+@media (max-width: 600px) {
+  .work-header { flex-direction: column; align-items: flex-start; gap: 0.5em 0; }
+  .work-details { padding-left: 2em; }
+}
+.show-on-top {
+  transform: none !important;
+  position: absolute !important;
+  z-index: 5000 !important;
+  overflow: visible !important;
+}
+
+/* New: Create Session Button + Modal styles */
+.session-btn {
+  width: 200px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: linear-gradient(90deg,#6c5ce7,#4f8cff);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(79,70,229,0.18);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.session-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(79,70,229,0.18); }
+
+/* session card to wrap the button nicely */
+.session-card {
+  width: 200px;
+  min-height: 70px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, #f7fbff);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Small helper text */
+.session-help { font-size: 0.8rem; color: #6c757d; text-align: center; margin-top:8px; }
+
+  .create-session-modal .modal-content {
+    width: 520px;
+    max-width: 95%;
+    padding: 22px;
+    border-radius: 12px;
+  }
+  .create-session-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .create-session-grid .full { grid-column: 1 / -1; }
+  .small-muted { font-size: 0.85rem; color: #6c757d; margin-top: -6px; margin-bottom: 8px; }
+  .session-preview { background: #f7fbff; border: 1px solid #e6f0ff; padding: 10px; border-radius: 8px; font-size: 0.95rem; }
+  /* Modal overlay */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 1000; 
+  left: 0; 
+  top: 0; 
+  width: 100%; 
+  height: 100%; 
+  overflow: auto; 
+  background-color: rgba(0,0,0,0.5); 
+  animation: fadeIn 0.3s;
+}
+
+/* Modal content box */
+.modal-content {
+  background-color: #fff;
+  margin: 10% auto; 
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px; 
+  position: relative;
+  transform: translateY(-50px);
+  opacity: 0;
+  animation: slideIn 0.3s forwards;
+}
+
+/* Close button */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: #333;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.submit-btn {
+  background-color: #3498db;
+  color: #fff;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background-color: #2980b9;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {opacity: 0;}
+  to {opacity: 1;}
+}
+
+@keyframes slideIn {
+  from {opacity: 0; transform: translateY(-50px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+
+</style>
+</head>
+<body>
+  <!-- Sidebar Hover Area for mouse entry -->
+<div class="sidebar-hover-area" id="sidebarHoverArea"></div>
+<!-- Sidebar -->
+<div class="sidebar closed" id="sidebar">
+    <div class="logo">
+        <img src="{% static 'images/cmu.jpg' %}" alt="CMU Logo">
+        <div class="cmu-logo">City of Malabon University</div>
+    </div>
+    <nav class="nav-menu">
+        <a href="{% url 'teachers:dashboard' %}" class="nav-item"><i class="fas fa-home"></i><span class="nav-label">Home</span></a>
+        <a href="{% url 'teachers:calendar' %}" class="nav-item"><i class="fas fa-calendar"></i><span class="nav-label">Event Calendar</span></a>
+        <div class="dropdown-container">
+            <div class="teaching-header" id="teachingHeader">
+                <div class="teaching-content">
+                    <i class="fas fa-chalkboard-user"></i>
+                    <span class="nav-label">Teaching</span>
+                    <span class="class-count" id="classCount">
+                        {{ classes.count }} class{{ classes.count|pluralize }}
+                    </span>
+                </div>
+                <i class="fas fa-chevron-down dropdown-arrow" id="dropdownArrow"></i>
+            </div>
+            <div class="subjects-container" id="subjectsContainer">
+                {% if classes %}
+            {% for class in classes %}
+                <div class="subject-item" onclick="location.href='{% url 'teachers:subject' class.id %}'">
+                    <div class="subject-avatar">{{ class.class_name|first|upper }}</div>
+                    <div class="subject-content">
+                        <div class="subject-name">{{ class.class_name }}</div>
+                        <div class="subject-details">
+                            {{ class.section|default:"No section" }}
+                        </div>
+                    </div>
+                 <!-- Delete button -->
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="empty-state" id="emptyState">
+                No classes created yet. Click + to create your first class!
+            </div>
+            {% endif %}
+        </div>
+        </div>
+        <a href="{% url 'teachers:announcement_list' %}" class="nav-item"><i class="fas fa-bullhorn"></i><span class="nav-label">Announcement</span></a>
+        <a href="{% url 'teachers:messages_inbox' %}" class="nav-item"><i class="fas fa-comments"></i><span class="nav-label">Messages</span></a>
+        <a href="{% url 'teachers:archived_classes' %}" class="nav-item"><i class="fas fa-archive"></i><span class="nav-label">Archived Classes</span></a>
+        <a href="{% url 'account_logout' %}" class="nav-item"><i class="fas fa-sign-out-alt"></i><span class="nav-label">Logout</span></a>
+    </nav>
+</div>
+
+  <!-- Main -->
+  <div class="main-content">
+    <!-- Header -->
+    <div class="header">
+      <h5>{{ class_obj.subject_name }} - {{ class_obj.section }}</h5>
+      <div class="user-profile">
+                    <span>{{ user.first_name }}<br>
+             <span style="font-size: 12px; color: green;">(Professor)</span>
+                 </span>
+                    <div class="user-profile" id="userProfileDropdown">
+                        <div class="user-avatar" id="userAvatarBtn">
+                           {% if user.profile and user.profile.avatar %}
+            <img src="{{ user.profile.avatar.url }}" alt="User Avatar" class="rounded-circle" style="width:40px; height:40px; object-fit:cover;">
+        {% else %}
+        
+            <div class="rounded-circle bg-primary text-white d-flex justify-content-center align-items-center" 
+                 style="width:40px; height:40px; font-weight:bold; font-size:18px;">
+                {{ user.first_name|first|upper }}
+            </div>
+        {% endif %}
+                        </div>
+                        <div class="avatar-dropdown-menu" id="avatarDropdownMenu">
+                            <a href="{% url 'accounts:settings' %}"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="{% url 'account_logout' %}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav-tabs list-unstyled">
+      <li class="nav-tab active" data-tab="stream">Overview</li>
+      <li class="nav-tab" data-tab="classwork">Classwork</li>
+      <li class="nav-tab" data-tab="people">People</li>
+      <li class="nav-tab" data-tab="marks">Marks</li>
+
+    </ul>
+
+   <!-- Stream Section -->
+  <div id="stream" class="tab-section active">
+   <!-- Banner -->
+<div class="banner"
+     style="
+        {% if class_obj.banner %}
+            background: url('{{ class_obj.banner.url }}') center/cover no-repeat;
+        {% else %}
+            background-color: {{ class_obj.banner_color }};
+        {% endif %}
+        height:200px;
+        border-radius:10px;
+     ">
+  <div class="banner-overlay">
+      <h2>{{ class_obj.subject_name }}</h2>
+      <p>{{ class_obj.section }}</p>
+  </div>
+
+     <!-- Customize Button (absolute in top-right of banner) -->
+      <button class="bttn" id="openModal">
+        <i class="fa fa-pencil"></i> Customize
+      </button>
+</div>
+{% if user == class_obj.teacher %}
+<!-- Modal placed OUTSIDE the banner -->
+  <div id="customizeModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeModal">&times;</span>
+      <div class="modal-header">Customize Banner</div>
+      
+      <!-- ✅ Django Form -->
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Upload Banner -->
+      <div class="mb-3">
+        <label class="form-label">Upload Banner</label>
+        <input type="file" name="banner" class="form-control">
+        <small class="text-muted">Recommended: 1200x300px</small>
+      </div>
+
+      <!-- Banner Color -->
+      <div class="mb-3">
+        <label class="form-label">Banner Color</label>
+        <input type="color" name="banner_color" value="#3498db" class="form-control form-control-color">
+    </div>
+      <!-- Save Button -->
+      <div class="text-end">
+        <button type="submit" class="save-btn btn btn-primary">
+          <i class="fa fa-save"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+  <div class="container py-4">
+  <div class="row justify-content-center align-items-start">
+    <!-- Left: Class Code Card -->
+    <div class="col-12 col-md-3 d-flex justify-content-md-end justify-content-center mb-4 mb-md-0">
+      <div>
+        <div class="card text-center shadow-lg border-0" style="width: 200px; min-height: 130px; background: linear-gradient(135deg, #4f8cff 50%); color: #fff; border-radius: 18px;">
+          <div class="card-body p-3">
+            <h6 class="fw-bold mb-2" style="letter-spacing:1px;">Class Code</h6>
+            <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+              <span class="class-code fs-5 fw-bold" id="classCode" style="user-select:all;">{{ class_obj.code }}</span>
+              <button class="btn btn-light btn-sm shadow-sm" onclick="copyCode()" title="Copy">
+                <i class="fa fa-copy"></i>
+              </button>
+            </div>
+            <small class="opacity-75">Share with students</small>
+          </div>
+        </div>
+
+        <!-- New: Create Class Session button + helper -->
+        <div class="mt-3 d-flex justify-content-center">
+  <div class="session-card">
+    <button id="openCreateSession" class="session-btn" title="Create Class Session">
+      <i class="fas fa-calendar-plus"></i> Create Session Attendance
+    </button>
+  </div>
+</div>
+      </div>
+    </div>
+    <!-- Center: Announce + Recent Activity -->
+    <div class="col-12 col-md-7">
+      <!-- Announce Card -->
+      <div class="card p-4 mb-4 shadow-sm border-0" style="border-radius: 18px;">
+        <div class="d-flex align-items-center mb-3">
+          <i class="fa fa-bullhorn me-2 text-primary fs-4"></i>
+          <h5 class="mb-0 fw-semibold">Announce to your class</h5>
+        </div>
+       <form method="POST" action="{% url 'teachers:subject' class_obj.id %}">
+  {% csrf_token %}
+  <input 
+    type="text" 
+    name="announcement_text" 
+    class="form-control form-control-lg rounded-pill mb-3"
+    placeholder="Announce something to your class"
+    style="background:#f7f9fa;"
+    required
+  >
+  <div class="d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary rounded-pill px-4">
+      <i class="fa fa-paper-plane me-1"></i> Post
+    </button>
+  </div>
+</form>
+
+      </div>
+<!-- Enhanced Recent Activity Card -->
+<div class="recent-activity-card card border-0 shadow-sm">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center activity-header">
+    <div class="d-flex align-items-center">
+      <span class="activity-icon me-2">
+        <i class="fa fa-bell"></i>
+      </span>
+      <h6 class="mb-0 fw-bold">Recent Activity</h6>
+    </div>
+    <div>
+      {% if unread_count > 0 %}
+        <span class="badge bg-danger me-2 rounded-pill">{{ unread_count }}</span>
+      {% endif %}
+      <a href="{% url 'teachers:clear_notifications' class_obj.id %}" 
+         class="btn btn-sm btn-outline-danger"
+         onclick="return confirm('Are you sure you want to clear all notifications?');">
+        Clear All
+      </a>
+    </div>
+  </div>
+
+  <div class="list-group list-group-flush position-relative">
+    {% for notif in notifications %}
+      <div class="list-group-item d-flex justify-content-between align-items-start {% if not notif.read %}bg-activity-unread{% endif %}" style="transition: background 0.2s; position: relative;">
+
+        <!-- Left: Notification content -->
+        <a href="{% url 'teachers:notification_redirect' notif.id %}" 
+           class="flex-grow-1 text-decoration-none text-dark">
+          <p class="mb-1 activity-message">
+            {% if notif.user == request.user %}
+              {{ notif.message }}
+            {% else %}
+              <span class="fw-bold">{{ notif.user.get_full_name }}</span> {{ notif.message }}
+            {% endif %}
+          </p>
+          <small class="text-muted">{{ notif.created_at|date:"M d, Y H:i" }}</small>
+        </a>
+
+        <!-- Right: Dropdown menu -->
+       <!-- Right: Dropdown menu -->
+<div class="dropdown" style="position: relative; overflow: visible;">
+  <button class="btn btn-link text-muted p-0" 
+          type="button"
+          data-bs-toggle="dropdown" 
+          aria-expanded="false">
+    <i class="fa-solid fa-ellipsis-vertical"></i>
+  </button>
+
+  <ul class="dropdown-menu dropdown-menu-end shadow show-on-top"
+      style="position: absolute !important; top: 100%; right: 0; margin-top: 6px; z-index: 3000; height:max-content;">
+    {% if notif.assignment %}
+      <li>
+        <a class="dropdown-item" 
+           href="{% url 'teachers:edit_assignment' notif.assignment.id %}">
+           ✏️ Edit Assignment
+        </a>
+      </li>
+    {% elif notif.quiz %}
+      <li>
+        <a class="dropdown-item" 
+           href="{% url 'teachers:edit_quiz' notif.quiz.id %}">
+           ✏️ Edit Quiz
+        </a>
+      </li>
+    {% else %}
+      <li>
+        <a class="dropdown-item edit-btn" href="#" 
+           data-id="{{ notif.id }}" 
+           data-message="{{ notif.message }}">
+           ✏️ Edit Announcement
+        </a>
+      </li>
+    {% endif %}
+    <li>
+      <a class="dropdown-item copy-link-btn" href="#" 
+         data-url="{% url 'teachers:notification_redirect' notif.id %}">
+         🔗 Copy Link
+      </a>
+    </li>
+    <li>
+      <a class="dropdown-item text-danger delete-btn" href="#" 
+         data-id="{{ notif.id }}">
+         🗑️ Delete
+      </a>
+    </li>
+  </ul>
+</div>
+
+      </div>
+    {% empty %}
+      <div class="list-group-item text-muted">
+        Use the stream to share announcements, post assignments, and respond to student questions<br>
+        <a href="#" class="small text-decoration-none">⚙️ Stream settings</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- Attendance Section -->
+
+
+
+
+<!-- Classwork Section -->
+<div id="classwork" class="tab-section">
+ 
+    <div class="d-flex justify-content-between align-items-center mb-3">
+
+      <!-- Create Button with Dropdown -->
+      <div class="dropdown position-relative">
+        <button class="btn btn-primary fw-bold px-4 py-2" 
+                type="button" 
+                onclick="toggleCreateDropdown()" 
+                style="border-radius:16px; font-size:18px;">
+          <i class="fas fa-plus me-2"></i> CREATE
+        </button>
+
+        <!-- Custom Dropdown Menu -->
+        <div id="createDropdownMenu" class="dropdown-menu-custom">
+          <a class="dropdown-item-custom" href="{% url 'teachers:assignment_form' class_obj.id %}">
+            <i class="fas fa-clipboard-list text-primary"></i> Assignment
+          </a>
+          <a class="dropdown-item-custom" href="{% url 'teachers:create_quiz' class_obj.id %}">
+            <i class="fas fa-question-circle text-success"></i> Questionnaire
+          </a>
+        </div>
+      </div>
+
+    </div>
+  
+
+  <!-- ============ ASSIGNMENTS ============ -->
+  <div class="category mb-3">
+    <h5 class="category-header" data-bs-toggle="collapse" data-bs-target="#assignmentsCollapse" style="cursor:pointer;">
+      <i class="fas fa-file-alt text-primary me-2"></i> Assignments
+    </h5>
+    <div id="assignmentsCollapse" class="collapse show">
+      {% if assignments %}
+        {% for assignment in assignments %}
+          <div class="work-card card mb-3 shadow-sm" id="assignment-{{ assignment.id }}">
+  <div class="work-header bg-white" onclick="toggleWork('assignment-{{ assignment.id }}')">
+              <div class="d-flex align-items-center gap-3">
+                <span class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle" style="width:32px; height:32px;">
+                  <i class="fas fa-file-alt"></i>
+                </span>
+                <div>
+                  <p class="work-title">{{ assignment.title }}</p>
+                  <small class="work-subtitle">
+                    {% if assignment.due_date %}Due {{ assignment.due_date|date:"M d, Y" }}{% else %}No due date{% endif %}
+                  </small>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center gap-4">
+                <div class="work-stats">
+                  <span><strong>{{ assignment.turned_in }}</strong> Turned in</span>
+                  <span><strong>{{ assignment.missing }}</strong> Missing</span>
+                  <span><strong>{{ assignment.assigned }}</strong> Assigned</span>
+                </div>
+                <button type="button" class="btn btn-link text-muted p-0 menu-trigger"
+                        data-edit-url="{% url 'teachers:assignment_form' assignment.class_obj.id %}?edit={{ assignment.id }}"
+                        data-delete-url="{% url 'teachers:delete_assignment' assignment.id %}"
+                        data-assignment-id="{{ assignment.id }}">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="work-details" id="details-assignment-{{ assignment.id }}" style="display:none;">
+    <p class="mb-2">{{ assignment.instructions|default:"No instructions provided." }}</p>
+    <a class="text-primary" href="{% url 'teachers:assignment_detail' assignment.id %}">View instructions</a>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted">No assignments yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ============ QUIZZES ============ -->
+  <div class="category mb-3">
+  <h5 class="category-header" data-bs-toggle="collapse" data-bs-target="#quizzesCollapse" style="cursor:pointer;">
+    <i class="fas fa-question-circle text-success me-2"></i> Quizzes and Exams
+  </h5>
+  <div id="quizzesCollapse" class="collapse show">
+    {% if quizzes %}
+      {% for quiz in quizzes %}
+        <div class="work-card card mb-3 shadow-sm" id="quiz-{{ quiz.id }}">
+  <div class="work-header bg-white" onclick="toggleWork('quiz-{{ quiz.id }}')">
+              <div class="d-flex align-items-center gap-3">
+                <span class="d-inline-flex align-items-center justify-content-center bg-success text-white rounded-circle" style="width:32px; height:32px;">
+                  <i class="fas fa-question-circle"></i>
+                </span>
+                <div>
+                  <p class="work-title">{{ quiz.title }}</p>
+                  <small class="work-subtitle">
+                    {% if quiz.due_date %}Due {{ quiz.due_date|date:"M d, Y" }}{% else %}No due date{% endif %}
+                  </small>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center gap-4">
+                <div class="work-stats">
+  <span><strong>{{ quiz.turned_in }}</strong> Turned in</span>
+<span><strong>{{ quiz.missing }}</strong> Missing</span>
+<span><strong>{{ quiz.assigned }}</strong> Assigned</span>
+                </div>
+                <button type="button" class="btn btn-link text-muted p-0 menu-trigger">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="work-details" id="details-quiz-{{ quiz.id }}" style="display:none;">
+    <p class="mb-2">{{ quiz.description|default:"No descriptions provided." }}</p>
+    <a class="text-primary" href="{% url 'teachers:quiz_detail' class_obj.id quiz.id %}">View submissions</a>
+
+            </div>
+          </div>
+      
+      {% endfor %}
+    {% else %}
+      <p class="text-muted">No quizzes yet.</p>
+    {% endif %}
+  </div>
+</div>
+</div>
+
+
+  <!-- People Section -->
+<div id="people" class="tab-section">
+  <div class="card p-4">
+
+    <!-- Teacher -->
+    <div class="people-section">
+      <h6>Teacher</h6>
+      <div class="person-item">
+        <div class="person-avatar">
+          {% if class_obj.teacher.profile_picture %}
+            <img src="{{ class_obj.teacher.profile_picture.url }}" alt="{{ class_obj.teacher.get_full_name }}">
+          {% else %}
+            {{ class_obj.teacher.first_name|slice:":1" }}
+          {% endif %}
+        </div>
+        <div class="person-info">
+          <p class="person-name">{{ class_obj.teacher.first_name }} {{ class_obj.teacher.last_name }}</p>
+          <p class="person-role">Teacher</p>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- Students -->
+<div class="people-section">
+  <h6>Students ({{ class_obj.students.count }})</h6>
+  {% for student in class_obj.students.all %}
+    <div class="person-item">
+      <div class="person-avatar">
+        <a href="{% url 'teachers:student_detail' student.id %}">
+          {% if student.profile_picture %}
+            <img src="{{ student.profile_picture.url }}" alt="{{ student.get_full_name }}">
+          {% else %}
+            {{ student.first_name|slice:":1" }}
+          {% endif %}
+        </a>
+      </div>
+      <div class="person-info">
+        <a href="{% url 'teachers:student_detail' student.id %}" class="text-decoration-none">
+          <p class="person-name">{{ student.first_name }} {{ student.last_name }}</p>
+        </a>
+        <p class="person-role">Student</p>
+      </div>
+      <div class="person-actions">
+        <!-- Remove student -->
+        <button class="btn-remove-student" onclick="removeStudent({{ student.id }})" title="Remove Student">×</button>
+        <!-- Message student -->
+        <a href="{% url 'teachers:conversation' student.id %}" class="btn-message-student" title="Message Student">✉️</a>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-muted">No students have joined yet.</p>
+  {% endfor %}
+</div>
+
+  </div>
+</div>
+
+<!-- Marks Section -->
+<div id="marks" class="tab-section">
+  <div class="container-fluid mt-4">
+
+    <!-- Top controls -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <div>
+        <a href="{% url 'teachers:export_grades' class_obj.id %}" class="btn btn-outline-secondary btn-sm">
+          <i class="fas fa-file-download"></i> Download CSV
+        </a>
+        <button class="btn btn-danger btn-sm" form="gradeform" name="bulk_zero" value="1">
+          <i class="fas fa-ban"></i> Set all missing = 0
+        </button>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" action="{% url 'teachers:import_grades' class_obj.id %}" class="d-flex align-items-center gap-2">
+        {% csrf_token %}
+        <input type="file" name="file" accept=".csv" required class="form-control form-control-sm" style="max-width:220px;">
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-upload"></i> Upload CSV
+        </button>
+      </form>
+    </div>
+
+    <!-- Grades Table -->
+    <form method="post" id="gradeform">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-hover table-bordered align-middle grades-table">
+          <thead class="table-light">
+            <tr>
+              <th class="sticky-col bg-light" style="min-width:180px;">Student</th>
+              {% for assignment in assignments %}
+                <th class="text-center">
+                  <div class="text-truncate" style="max-width:150px;" title="{{ assignment.title }}">
+                    {{ assignment.title }}
+                  </div>
+                  <small class="text-muted d-block">/ {{ assignment.points }}</small>
+                  <div class="text-success small mt-1 fw-semibold" id="assignment-avg-{{ assignment.id }}">
+                    Avg: {{ assignment_averages|get_item:assignment.id|default_if_none:"—" }}
+                  </div>
+                </th>
+              {% endfor %}
+              <th class="text-center">Average</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in gradebook %}
+              <tr>
+                <td class="sticky-col bg-white fw-semibold">{{ row.student.get_full_name }}</td>
+
+                {% for g in row.grades %}
+                  {% with sub=g.submission %}
+                  <td class="text-center">
+                    {% if g.grade is not None %}
+                      <span class="badge bg-success mb-1">Graded</span>
+                    {% elif sub and sub.file %}
+                      <span class="badge bg-info text-dark mb-1">Turned In</span>
+                    {% else %}
+                      <span class="badge bg-secondary mb-1">Missing</span>
+                    {% endif %}
+
+                    {% if sub %}
+                      <input type="text"
+                             class="form-control form-control-sm text-center mb-1 grade-input"
+                             data-class="{{ class_obj.id }}"
+                             data-submission="{{ sub.id }}"
+                             data-student="{{ row.student.id }}"
+                             data-assignment="{{ g.assignment.id }}"
+                             value="{{ g.grade|default:'' }}">
+                    {% endif %}
+                  </td>
+                  {% endwith %}
+                {% endfor %}
+
+                <td class="text-center student-avg fw-bold bg-light" id="student-avg-{{ row.student.id }}">
+                  {% if row.average %}
+                    {{ row.average }}
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Save button -->
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save"></i> Save changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+</div>
+
+<!-- Create Session Modal (NEW) -->
+<!-- Create Attendance Session Modal -->
+<div id="createSessionModal" class="modal">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times;</span>
+    <h3>Create Attendance Session</h3>
+    <form method="POST" action="{% url 'teachers:start_attendance' class_obj.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="latitude" id="latitude">
+      <input type="hidden" name="longitude" id="longitude">
+      
+      <div class="form-group">
+        <label>Radius (meters)</label>
+        <input type="number" name="radius_m" value="50" required>
+      </div>
+      <div class="form-group">
+        <label>Duration (minutes)</label>
+        <input type="number" name="duration_minutes" value="10" required>
+      </div>
+      <button type="submit" class="submit-btn">Start Session</button>
+    </form>
+  </div>
+</div>
+
+<!-- Global floating context menu -->
+<div id="assignmentCtxMenu" class="ctx-menu" role="menu" aria-hidden="true">
+  <div class="ctx-item" data-action="copy">
+    <i class="fa-regular fa-copy text-muted"></i>
+    Copy Link
+  </div>
+  <div class="ctx-item" data-action="edit">
+    <i class="fa-regular fa-pen-to-square text-primary"></i>
+    Edit
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item text-danger" data-action="delete">
+    <i class="fa-regular fa-trash-can"></i>
+    Delete
+  </div>
+  <input type="hidden" id="ctxEditUrl">
+  <input type="hidden" id="ctxDeleteUrl">
+  <input type="hidden" id="ctxCopyUrl">
+</div>
+<!-- Toast container -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index: 1080">
+  {% if messages %}
+    {% for message in messages %}
+      <div class="toast align-items-center text-bg-{{ message.tags }} border-0 mb-2" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+          <div class="toast-body">
+            {{ message }}
+          </div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+</div>
+<!-- Attendance QR Modal -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tab = urlParams.get("tab");
+
+  if (tab === "marks") {
+    document.querySelectorAll(".tab-section").forEach(sec => sec.style.display = "none");
+    const marksTab = document.getElementById("marks");
+    if (marksTab) marksTab.style.display = "block";
+  }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const generateBtn = document.getElementById("generateQRBtn");
+  const dateInput = document.getElementById("attendanceDate");
+  const timeInput = document.getElementById("attendanceTime");
+  const qrDisplay = document.getElementById("qrDisplay");
+  const classId = document.getElementById("attendanceBtn")?.dataset.classId;
+
+  if (generateBtn) {
+    generateBtn.addEventListener("click", function () {
+      const date = dateInput.value;
+      const time = timeInput.value;
+
+      if (!date || !time) {
+        qrDisplay.innerHTML = "<p class='text-danger'>Please select both date and time.</p>";
+        return;
+      }
+
+      qrDisplay.innerHTML = "<p>Generating QR...</p>";
+
+      fetch(`/teachers/attendance/create/${classId}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: new URLSearchParams({ date: date, time: time })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            qrDisplay.innerHTML = `<p class='text-danger'>${data.error}</p>`;
+            return;
+          }
+          qrDisplay.innerHTML = `
+            <p><strong>Scan to Mark Attendance</strong></p>
+            <img src="data:image/png;base64,${data.qr}" alt="QR" style="width:300px;height:300px;">
+            <p class="mt-2 text-muted">Expires at ${data.expires_at}</p>
+          `;
+        })
+        .catch(() => {
+          qrDisplay.innerHTML = "<p class='text-danger'>Error generating QR.</p>";
+        });
+    });
+  }
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+    var toastList = toastElList.map(function (toastEl) {
+      var toast = new bootstrap.Toast(toastEl, { delay: 3000 }) // auto-hide after 3 sec
+      toast.show()
+      return toast
+    })
+  });
+const modal = document.getElementById("customizeModal");
+  const openBtn = document.getElementById("openModal");
+  const closeBtn = document.getElementById("closeModal");
+
+  openBtn.onclick = () => modal.style.display = "block";
+  closeBtn.onclick = () => modal.style.display = "none";
+  window.onclick = (e) => {
+    if (e.target == modal) modal.style.display = "none";
+  };
+  function toggleCreateDropdown() {
+    const menu = document.getElementById("createDropdownMenu");
+    menu.style.display = (menu.style.display === "none" || menu.style.display === "") ? "block" : "none";
+  }
+
+  // Optional: close dropdown if clicked outside
+  window.addEventListener("click", function(event) {
+    if (!event.target.closest(".dropdown")) {
+      document.getElementById("createDropdownMenu").style.display = "none";
+    }
+  });
+  function toggleWork(id) {
+  const details = document.getElementById("details-" + id);
+
+  // Close all other details first
+  document.querySelectorAll(".work-details").forEach(el => {
+    if (el !== details) {
+      el.style.display = "none";
+    }
+  });
+
+  // Toggle the one clicked
+  if (details.style.display === "none" || details.style.display === "") {
+    details.style.display = "block";
+  } else {
+    details.style.display = "none";
+  }
+}
+  
+   // Tabs
+   document.querySelectorAll(".nav-tab").forEach(tab=>{
+      tab.addEventListener("click",()=>{
+        document.querySelectorAll(".nav-tab").forEach(t=>t.classList.remove("active"));
+        document.querySelectorAll(".tab-section").forEach(s=>s.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.dataset.tab).classList.add("active");
+      });
+    });
+
+
+    
+// Sidebar open/close logic with hover area
+const sidebar = document.getElementById('sidebar');
+const hoverArea = document.getElementById('sidebarHoverArea');
+let sidebarHovered = false;
+let hoverTimeout = null;
+
+function openSidebar() {
+    sidebar.classList.remove('closed');
+}
+function closeSidebar() {
+    sidebar.classList.add('closed');
+    // Close dropdown if open
+    const subjectsContainer = document.getElementById('subjectsContainer');
+    const dropdownArrow = document.getElementById('dropdownArrow');
+    subjectsContainer.classList.remove('expanded');
+    dropdownArrow.classList.remove('rotated');
+}
+
+sidebar.addEventListener('mouseenter', () => {
+    sidebarHovered = true;
+    openSidebar();
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+});
+sidebar.addEventListener('mouseleave', () => {
+    sidebarHovered = false;
+    hoverTimeout = setTimeout(() => {
+        if (!sidebarHovered) closeSidebar();
+    }, 150);
+});
+hoverArea.addEventListener('mouseenter', () => {
+    sidebarHovered = true;
+    openSidebar();
+    if (hoverTimeout) clearTimeout(hoverTimeout);
+});
+hoverArea.addEventListener('mouseleave', () => {
+    sidebarHovered = false;
+    hoverTimeout = setTimeout(() => {
+        if (!sidebarHovered) closeSidebar();
+    }, 150);
+});
+
+// Teaching dropdown logic (only opens if sidebar is open)
+const teachingHeader = document.getElementById("teachingHeader");
+const subjectsContainer = document.getElementById("subjectsContainer");
+const dropdownArrow = document.getElementById("dropdownArrow");
+let teachingDropdownOpen = false;
+teachingHeader.addEventListener("click", function(e) {
+    if (sidebar.classList.contains('closed')) return;
+    subjectsContainer.classList.toggle("expanded");
+    dropdownArrow.classList.toggle("rotated");
+    teachingDropdownOpen = subjectsContainer.classList.contains("expanded");
+});
+
+// Dropdown for class card settings (unchanged)
+document.addEventListener("DOMContentLoaded", () => {
+    const dropdowns = document.querySelectorAll(".dropdown");
+    dropdowns.forEach(dropdown => {
+        const toggle = dropdown.querySelector(".toggle-options");
+        toggle.addEventListener("click", (e) => {
+            e.preventDefault();
+            dropdown.classList.toggle("active");
+        });
+        document.addEventListener("click", (e) => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove("active");
+            }
+        });
+    });
+});
+
+  function copyCode() {
+  var code = document.getElementById("classCode").innerText;
+  navigator.clipboard.writeText(code).then(() => {
+    alert("Class code copied: " + code);
+  });
+}
+
+// Open messages with preselected contact
+
+// Floating context menu logic
+(function(){
+  const menu = document.getElementById('assignmentCtxMenu');
+  const editInput = document.getElementById('ctxEditUrl');
+  const deleteInput = document.getElementById('ctxDeleteUrl');
+  const copyInput = document.getElementById('ctxCopyUrl');
+
+  function openMenu(x, y){
+    const padding = 8;
+    menu.style.display = 'block';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+    const rect = menu.getBoundingClientRect();
+    let left = x, top = y;
+    if (rect.right > window.innerWidth - padding) left = window.innerWidth - rect.width - padding;
+    if (rect.bottom > window.innerHeight - padding) top = window.innerHeight - rect.height - padding;
+    menu.style.left = Math.max(padding, left) + 'px';
+    menu.style.top = Math.max(padding, top) + 'px';
+    menu.setAttribute('aria-hidden','false');
+  }
+  function closeMenu(){
+    menu.style.display = 'none';
+    menu.setAttribute('aria-hidden','true');
+  }
+
+  document.addEventListener('click', function(e){
+    const trigger = e.target.closest('.menu-trigger');
+    if (trigger){
+      e.preventDefault();
+      e.stopPropagation();
+      const r = trigger.getBoundingClientRect();
+      editInput.value = trigger.dataset.editUrl || '';
+      deleteInput.value = trigger.dataset.deleteUrl || '';
+      const id = trigger.dataset.assignmentId;
+      const base = window.location.origin + window.location.pathname;
+      copyInput.value = base + '#work-' + id;
+      openMenu(r.right + 6, r.bottom + 6);
+      return;
+    }
+    if (!menu.contains(e.target)) closeMenu();
+  });
+
+  window.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeMenu(); });
+
+  menu.addEventListener('click', function(e){
+    const item = e.target.closest('.ctx-item');
+    if (!item) return;
+    const action = item.dataset.action;
+    if (action === 'copy'){
+      const url = copyInput.value || window.location.href;
+      navigator.clipboard.writeText(url);
+      closeMenu();
+    } else if (action === 'edit'){
+      const url = editInput.value; if (url) window.location.href = url;
+      closeMenu();
+    } else if (action === 'delete'){
+      const url = deleteInput.value; if (url && confirm('Are you sure you want to delete this assignment?')) window.location.href = url;
+      closeMenu();
+    }
+  });
+})();
+// Grade input auto-save logic
+document.querySelectorAll(".grade-input").forEach(input => {
+  function saveGrade() {
+    const submissionId = input.dataset.submission;
+    const classId = input.dataset.class;
+    const studentId = input.dataset.student;
+    const assignmentId = input.dataset.assignment;
+    const value = input.value;
+
+    fetch(`/teachers/class/${classId}/grade/${submissionId}/`, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `grade=${encodeURIComponent(value)}`
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        // Update student avg
+        const studentAvgCell = document.querySelector(`#student-avg-${studentId}`);
+        if (studentAvgCell) {
+          studentAvgCell.innerHTML = data.student_avg ? `<strong>${data.student_avg}</strong>` : `<span class="text-muted">—</span>`;
+        }
+        // Update assignment avg
+        const assignmentAvgCell = document.querySelector(`#assignment-avg-${assignmentId}`);
+        if (assignmentAvgCell) {
+          assignmentAvgCell.innerHTML = data.assignment_avg ? `Avg: ${data.assignment_avg}` : `Avg: —`;
+        }
+      } else {
+        alert(data.error || "Error saving grade");
+      }
+    });
+  }
+
+  input.addEventListener("keypress", e => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveGrade();
+    }
+  });
+
+  input.addEventListener("blur", saveGrade); // Auto-save on blur
+});
+// User avatar dropdown
+const userAvatarBtn = document.getElementById("userAvatarBtn");
+const avatarDropdownMenu = document.getElementById("avatarDropdownMenu");
+const userProfileDropdown = document.getElementById("userProfileDropdown");
+
+userAvatarBtn.addEventListener("click", function(e) {
+    e.stopPropagation();
+    avatarDropdownMenu.style.display = avatarDropdownMenu.style.display === "flex" ? "none" : "flex";
+});
+
+document.addEventListener("click", function(e) {
+    if (!userProfileDropdown.contains(e.target)) {
+        avatarDropdownMenu.style.display = "none";
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  // ✅ Handle Copy Link
+  document.querySelectorAll('.copy-link-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const url = this.dataset.url;
+      const fullUrl = `${window.location.origin}${url}`;
+      
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        // Optional: show alert or toast
+        alert("✅ Link copied to clipboard!");
+      }).catch(err => {
+        console.error("Clipboard error:", err);
+      });
+    });
+  });
+
+  // ✅ Handle Delete Button (AJAX)
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const notifId = this.dataset.id;
+      const confirmed = confirm("🗑️ Are you sure you want to delete this notification?");
+      if (!confirmed) return;
+
+      fetch(`/teachers/delete_notification/${notifId}/`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+      })
+      .then(response => {
+        if (response.ok) {
+          alert("✅ Notification deleted!");
+          // Optionally remove from DOM
+          this.closest('.dropdown').parentElement.remove();
+        } else {
+          alert("❌ Failed to delete notification.");
+        }
+      })
+      .catch(error => console.error("Error:", error));
+    });
+  });
+
+  // ✅ Helper function to get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+});
+document.addEventListener("DOMContentLoaded", function() {
+    const openBtn = document.getElementById('openCreateSession');
+    const modal = document.getElementById('createSessionModal');
+    const closeBtn = document.getElementById('closeModal');
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+
+    openBtn.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(function(position) {
+            latInput.value = position.coords.latitude.toFixed(6);
+            lngInput.value = position.coords.longitude.toFixed(6);
+            modal.style.display = 'block';
+        }, function(err) {
+            alert("Unable to get your location: " + err.message);
+        }, { enableHighAccuracy: true });
+    });
+
+    closeBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+
+    // Optional: close modal if clicking outside the modal content
+    window.addEventListener('click', function(e) {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+});
+</script>
+</body>
+</html>

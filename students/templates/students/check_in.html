@@ -1,0 +1,124 @@
+<!-- students/check_in.html -->
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Check-In</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #6a82fb, #fc5c7d);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .checkin-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            text-align: center;
+            position: relative;
+        }
+
+        .checkin-card h3 {
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .session-info p {
+            margin: 4px 0;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .btn-checkin {
+            border-radius: 50px;
+            font-size: 1.2rem;
+            padding: 12px 40px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .btn-checkin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .location-pulse {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #6a82fb;
+            position: absolute;
+            top: 50%;
+            left: -25px;
+            transform: translateY(-50%);
+            animation: pulse 1.2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(0.8); opacity: 0.6; }
+            50% { transform: translateY(-50%) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-50%) scale(0.8); opacity: 0.6; }
+        }
+
+        small.text-muted {
+            display: block;
+            margin-top: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="checkin-card">
+        <h3>{{ session.class_obj.class_name }}</h3>
+        <div class="session-info mb-3">
+            <p><strong>Teacher:</strong> {{ session.teacher.get_full_name }}</p>
+            <p><strong>Time:</strong> {{ session.start_time|date:"H:i" }} - {{ session.end_time|date:"H:i" }}</p>
+            <p><strong>Allowed radius:</strong> {{ session.radius_m }} meters</p>
+        </div>
+
+        <form method="POST" id="checkInForm" class="position-relative">
+            {% csrf_token %}
+            <input type="hidden" name="latitude" id="latitude">
+            <input type="hidden" name="longitude" id="longitude">
+            <div class="location-pulse"></div>
+            <button type="submit" class="btn btn-primary btn-checkin" id="checkInBtn">
+                ✅ Check In
+            </button>
+        </form>
+
+        <small class="text-muted">Your location will be checked to ensure you are in the classroom.</small>
+    </div>
+
+    <script>
+        document.getElementById('checkInBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser.");
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+                document.getElementById('latitude').value = position.coords.latitude.toFixed(6);
+                document.getElementById('longitude').value = position.coords.longitude.toFixed(6);
+
+                document.getElementById('checkInForm').submit();
+            }, function(err) {
+                alert("Unable to get your location: " + err.message);
+            }, { enableHighAccuracy: true });
+        });
+    </script>
+</body>
+</html>
+{% endblock %}
