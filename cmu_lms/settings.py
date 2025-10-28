@@ -31,8 +31,17 @@ SECRET_KEY = 'django-insecure-hpfv+)po@r+trsf@*r)%m2m%o6urk5dvd6i@7oa#c5v^*ede4i
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['cmu-lms.onrender.com', 'localhost', '127.0.0.1','cmulms-1.onrender.com']
+# Detect Render hostname
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 
+if RENDER_EXTERNAL_HOSTNAME:
+    # Render production environment
+    ALLOWED_HOSTS = [RENDER_EXTERNAL_HOSTNAME, 'cmulms-1.onrender.com']
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}", "https://cmulms-1.onrender.com"]
+else:
+    # Local development
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost', 'http://127.0.0.1']
 
 
 # Application definition
